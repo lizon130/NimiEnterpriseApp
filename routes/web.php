@@ -25,6 +25,7 @@ use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WholesaleCalculationController;
 use App\Http\Controllers\FrontendController;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -229,6 +230,13 @@ Route::post('signup', [LoginController::class, 'signup'])->name('registration.po
 
 // admin route start
 Route::get('/admin', function () {
+    if (Auth::check()) {
+        if (Auth()->user()->role == 1) {
+            return redirect()->route('admin.index');
+        } else {
+            return redirect()->route('home');
+        }
+    }
     return view('backend.auth.login');
 })->name('admin');
 Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {

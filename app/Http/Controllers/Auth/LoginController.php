@@ -105,13 +105,7 @@ class LoginController extends Controller
                     }
                 }
                 // Authentication passed...
-                $authUser = Auth()->user()->role;
-
-                if ($authUser == 1) {
-                    return redirect()->route('admin.index');
-                }else{
-                    return redirect()->route('home');
-                }
+                return redirect()->route('home');
             }else{
                 return redirect()->back()->withErrors(['error' => 'Invalid credentials.']);
             }

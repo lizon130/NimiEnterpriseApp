@@ -147,6 +147,10 @@ class FrontendController extends Controller
 
     public function home() {
 
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
         App::setLocale(Session::get('language'));
 
 		$categories =Category::where('show_home', 1)
@@ -178,6 +182,9 @@ class FrontendController extends Controller
     }
 
     public function login() {
+        if (Auth::check()) {
+            return redirect()->route('home');
+        }
         App::setLocale(Session::get('language'));
         return view('backend.auth.login');
     }
