@@ -1,0 +1,2 @@
+[01-Jul-2026 14:34:11 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.2.0". You are running 8.1.34. in /home/nimiente/public_html/NimiEnterprise/vendor/composer/platform_check.php on line 24
+[01-Jul-2026 14:45:11 UTC] PHP Fatal error:  Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.2.0". You are running 8.1.34. in /home/nimiente/public_html/NimiEnterprise/vendor/composer/platform_check.php on line 24

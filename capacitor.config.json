@@ -1,0 +1,9 @@
+{
+  "appId": "com.nimienterprise.app",
+  "appName": "Nimi Enterprise",
+  "webDir": "www",
+  "server": {
+    "url": "https://nimienterprise.xyz/",
+    "cleartext": false
+  }
+}
