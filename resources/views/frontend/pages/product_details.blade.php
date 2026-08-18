@@ -1,5 +1,19 @@
 @extends('frontend.layout.app')
 @section('content')
+    @php
+        $originalPrice = $product->price;
+        $discount = $product->discount ?? 0;
+        $discountType = $product->discount_type ?? 'percent';
+        $discountedPrice = $originalPrice;
+
+        if ($discount > 0) {
+            if ($discountType == 'amount') {
+                $discountedPrice = $originalPrice - $discount;
+            } else {
+                $discountedPrice = $originalPrice - ($originalPrice * $discount) / 100;
+            }
+        }
+    @endphp
     <div id="productDetails">
         <div class="breadcrumb__nk">
             <div class="container">{{ trans('language.home') }} / {{ trans('language.products') }} /
@@ -44,15 +58,25 @@
                 <hr>
                 <div class="productDetails__price__order">
                     <div class="price__section">
-                        @if ($product->price > 0)
-                            <h5 class="price">Price: ${{ Helper::priceAfterOffer($product->id) }}</h5>
-                            <p class="price__discount"> {{ trans('language.old_price') }}:
-                                @if ($product->discount > 0 && $product->discount_type == 'percent')
-                                    <del>${{ $product->price }}</del> <ins> -{{ $product->discount }}%</ins>
-                                @elseif($product->discount > 0 && $product->discount_type == 'amount')
-                                    <del>${{ $product->price }}</del> <ins> -${{ $product->discount }}</ins>
-                                @endif
-                            </p>
+                        @if ($originalPrice > 0)
+                            @if ($discount > 0)
+                                <h5 class="price" style="color: #dc3545;">
+                                    {{ trans('language.price') }}: ৳{{ number_format($discountedPrice, 2) }}
+                                </h5>
+                                <p class="price__discount">
+                                    <span class="text-muted">{{ trans('language.old_price') }}:</span>
+                                    <del class="ms-1">৳{{ number_format($originalPrice, 2) }}</del>
+                                    @if ($discountType == 'amount')
+                                        <ins class="ms-2 text-success fw-bold">-৳{{ number_format($discount, 2) }}</ins>
+                                    @else
+                                        <ins class="ms-2 text-success fw-bold">-{{ $discount }}%</ins>
+                                    @endif
+                                </p>
+                            @else
+                                <h5 class="price">
+                                    {{ trans('language.price') }}: ৳{{ number_format($originalPrice, 2) }}
+                                </h5>
+                            @endif
                         @endif
                     </div>
 

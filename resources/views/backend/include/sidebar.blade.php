@@ -208,7 +208,39 @@
                     </a>
                 @endif --}}
 
+                <a class="nav-link logout-btn" href="{{ route('admin.logout') }}"
+                   onclick="event.preventDefault(); document.getElementById('sidebar-logout-form').submit();">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-right-from-bracket"></i></div> Logout
+                </a>
+                <form id="sidebar-logout-form" action="{{ route('admin.logout') }}" method="GET" style="display: none;"></form>
+
             </div>
         </div>
     </nav>
 </div>
+
+<style>
+    .logout-btn {
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 15px;
+        padding-top: 20px !important;
+        color: #f87171 !important;
+        transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover {
+        background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%) !important;
+        color: #ef4444 !important;
+        transform: translateX(4px);
+    }
+
+    .logout-btn .sb-nav-link-icon i {
+        color: #f87171;
+        transition: all 0.3s ease;
+    }
+
+    .logout-btn:hover .sb-nav-link-icon i {
+        color: #ef4444;
+        transform: translateX(2px);
+    }
+</style>

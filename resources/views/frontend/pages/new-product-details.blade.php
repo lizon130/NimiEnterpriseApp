@@ -688,21 +688,27 @@
                     <!-- Mobile Price & Order -->
                     {{-- Mobile Price & Order --}}
 <div class="d-block d-lg-none mt-4">
+    @php
+        $originalPrice = $product->price;
+        $discount = $product->discount ?? 0;
+        $discountType = $product->discount_type ?? 'percent';
+        $discountedPrice = Helper::priceAfterOffer($product->id);
+    @endphp
     <div class="price__section">
-        @if ($product->price > 0)
+        @if ($originalPrice > 0)
             <h3 class="price mb-0">
-                ${{ Helper::priceAfterOffer($product->id) }}
+                ৳{{ number_format($discountedPrice, 2) }}
             </h3>
 
-            @if ($product->discount > 0)
+            @if ($discount > 0)
                 <p class="price__discount mt-2 mb-0">
                     {{ trans('language.old_price') }}:
-                    <del>${{ number_format($product->price, 2) }}</del>
+                    <del>৳{{ number_format($originalPrice, 2) }}</del>
 
-                    @if ($product->discount_type == 'percent')
-                        <span class="discount-badge">{{ $product->discount }}% OFF</span>
-                    @elseif ($product->discount_type == 'amount')
-                        <span class="discount-badge">${{ $product->discount }} OFF</span>
+                    @if ($discountType == 'percent')
+                        <span class="discount-badge">{{ $discount }}% OFF</span>
+                    @elseif ($discountType == 'amount')
+                        <span class="discount-badge">৳{{ number_format($discount, 0) }} OFF</span>
                     @endif
                 </p>
             @endif
@@ -710,7 +716,7 @@
     </div>
 
     <div class="order__btn__area">
-        @if ($product->price > 0)
+        @if ($originalPrice > 0)
             <a href="{{ route('add.to.cart', ['type' => 'product', 'id' => $product->id]) }}"
                 class="btn order__btn add-to-cart">
                 <i class="fa-solid fa-cart-shopping me-2"></i>
@@ -748,77 +754,69 @@
 
                     <!-- Desktop Price & Order -->
                     <div class="d-none d-lg-block">
-                        <div class="price__section">
-                            @if (auth()->check() && $product->price > 0)
-                                @php
-                                    $originalPrice = $product->price;
-                                    $discount = $product->discount ?? 0;
-                                    $discountedPrice = $originalPrice;
-                                    if ($discount > 0) {
-                                        $discountedPrice = $originalPrice - ($originalPrice * $discount) / 100;
-                                    }
-                                @endphp
+                        @php
+                            $originalPrice = $product->price;
+                            $discount = $product->discount ?? 0;
+                            $discountType = $product->discount_type ?? 'percent';
+                            $discountedPrice = Helper::priceAfterOffer($product->id);
+                            $discountAmount = Helper::productDiscountAmount($product->id);
 
-                                @if (auth()->user()->role == 2 && $product->show_price == 1)
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h3 class="price mb-0">৳{{ number_format($discountedPrice, 2) }}</h3>
-                                        @if ($discount > 0)
-                                            <span class="discount-badge">{{ $discount }}% OFF</span>
-                                        @endif
-                                    </div>
+                            $showPriceForUser = false;
+                            if (!auth()->check()) {
+                                $showPriceForUser = ($originalPrice > 0);
+                            } else {
+                                if (auth()->user()->role == 2 && $product->show_price == 1) {
+                                    $showPriceForUser = true;
+                                } elseif (auth()->user()->role != 2 && $product->show_price_to_partner == 1) {
+                                    $showPriceForUser = true;
+                                }
+                            }
+
+                            $showOrderBtn = false;
+                            if (!auth()->check()) {
+                                $showOrderBtn = ($originalPrice > 0);
+                            } else {
+                                if (auth()->user()->role == 2 && $product->show_price == 1) {
+                                    $showOrderBtn = true;
+                                } elseif (auth()->user()->role != 2 && $product->show_price_to_partner == 1) {
+                                    $showOrderBtn = true;
+                                }
+                            }
+                        @endphp
+                        <div class="price__section">
+                            @if ($originalPrice > 0 && $showPriceForUser)
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h3 class="price mb-0">৳{{ number_format($discountedPrice, 2) }}</h3>
                                     @if ($discount > 0)
-                                        <p class="price__discount mb-0">
-                                            {{ trans('language.old_price') }}:
-                                            <del>৳{{ number_format($originalPrice, 2) }}</del>
-                                            <span class="text-success ms-2">
-                                                <i class="fa-solid fa-tag me-1"></i>Save
-                                                ৳{{ number_format($originalPrice - $discountedPrice, 2) }}
-                                            </span>
-                                        </p>
-                                    @endif
-                                @elseif (auth()->user()->role != 2 && $product->show_price_to_partner == 1)
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <h3 class="price mb-0">৳{{ number_format($discountedPrice, 2) }}</h3>
-                                        @if ($discount > 0)
+                                        @if ($discountType == 'percent')
                                             <span class="discount-badge">{{ $discount }}% OFF</span>
+                                        @elseif ($discountType == 'amount')
+                                            <span class="discount-badge">৳{{ number_format($discount, 0) }} OFF</span>
                                         @endif
-                                    </div>
-                                    @if ($discount > 0)
-                                        <p class="price__discount mb-0">
-                                            {{ trans('language.old_price') }}:
-                                            <del>৳{{ number_format($originalPrice, 2) }}</del>
-                                            <span class="text-success ms-2">
-                                                <i class="fa-solid fa-tag me-1"></i>Save
-                                                ৳{{ number_format($originalPrice - $discountedPrice, 2) }}
-                                            </span>
-                                        </p>
                                     @endif
+                                </div>
+                                @if ($discount > 0)
+                                    <p class="price__discount mb-0">
+                                        {{ trans('language.old_price') }}:
+                                        <del>৳{{ number_format($originalPrice, 2) }}</del>
+                                        <span class="text-success ms-2">
+                                            <i class="fa-solid fa-tag me-1"></i>Save
+                                            ৳{{ number_format($discountAmount, 2) }}
+                                        </span>
+                                    </p>
                                 @endif
                             @endif
                         </div>
 
                         <div class="order__btn__area">
-                            @if (auth()->check() && $product->price > 0)
-                                @if (auth()->user()->role == 2 && $product->show_price == 1)
-                                    <a href="{{ route('add.to.cart', ['type' => 'product', 'id' => $product->id]) }}"
-                                        class="btn order__btn add-to-cart">
-                                        <i class="fa-solid fa-cart-shopping me-2"></i>{{ trans('language.btn_order') }}
-                                    </a>
-                                @elseif(auth()->user()->role != 2 && $product->show_price_to_partner == 1)
-                                    <a href="{{ route('add.to.cart', ['type' => 'product', 'id' => $product->id]) }}"
-                                        class="btn order__btn add-to-cart">
-                                        <i class="fa-solid fa-cart-shopping me-2"></i>{{ trans('language.btn_order') }}
-                                    </a>
-                                @else
-                                    <a href="{{ route('add.to.inquiry', $product->id) }}" class="btn inquiry__btn">
-                                        <i
-                                            class="fa-solid fa-envelope me-2"></i>{{ trans('language.btn_add_to_inquiry_list') }}
-                                    </a>
-                                @endif
+                            @if ($showOrderBtn)
+                                <a href="{{ route('add.to.cart', ['type' => 'product', 'id' => $product->id]) }}"
+                                    class="btn order__btn add-to-cart">
+                                    <i class="fa-solid fa-cart-shopping me-2"></i>{{ trans('language.btn_order') }}
+                                </a>
                             @else
                                 <a href="{{ route('add.to.inquiry', $product->id) }}" class="btn inquiry__btn">
-                                    <i
-                                        class="fa-solid fa-envelope me-2"></i>{{ trans('language.btn_add_to_inquiry_list') }}
+                                    <i class="fa-solid fa-envelope me-2"></i>{{ trans('language.btn_add_to_inquiry_list') }}
                                 </a>
                             @endif
                             <a href="{{ route('add.to.wishlist', ['type' => 'product', 'id' => $product->id]) }}"

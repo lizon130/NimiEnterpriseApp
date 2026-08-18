@@ -699,12 +699,16 @@ class FrontendController extends Controller
     public function AddToCart($type, $id, Request $request) {
         $productId = $id;
         $quantity = 1;
+        $isAjax = $request->ajax() || $request->wantsJson();
 
         if ($request->session()->has('cartlist')) {
             $cartlist = $request->session()->get('cartlist');
 
             if (isset($cartlist[$productId])) {
-                return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
+                if ($isAjax) {
+                    return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
+                }
+                return redirect()->route('cart')->with('error', 'Product is already in your cart!');
             }
 
             $cartlist[$productId] = [
@@ -722,10 +726,12 @@ class FrontendController extends Controller
 
         $request->session()->put('cartlist', $cartlist);
 
-        // Calculate the updated cart count
         $cartCount = count($cartlist);
 
-        return response()->json(['status' => 'success', 'message' => 'Product added to cart!', 'cartCount' => $cartCount]);
+        if ($isAjax) {
+            return response()->json(['status' => 'success', 'message' => 'Product added to cart!', 'cartCount' => $cartCount]);
+        }
+        return redirect()->route('cart')->with('message', 'Product added to cart!');
     }
 
 
@@ -1256,12 +1262,16 @@ class FrontendController extends Controller
     public function AddTowishlist($type, $id, Request $request) {
         $productId = $id;
         $quantity = 1;
+        $isAjax = $request->ajax() || $request->wantsJson();
 
         if ($request->session()->has('cartlist')) {
             $cartlist = $request->session()->get('cartlist');
 
             if (isset($cartlist[$productId])) {
-                return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
+                if ($isAjax) {
+                    return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
+                }
+                return redirect()->back()->with('error', 'Product is already in your cart!');
             }
         }
 
@@ -1271,7 +1281,10 @@ class FrontendController extends Controller
             if (isset($wishlist[$productId])) {
 				unset($wishlist[$productId]);
                 $request->session()->put('wishlist', $wishlist);
-                return response()->json(['status' => 'error', 'message' => 'Product remove from wishlist!']);
+                if ($isAjax) {
+                    return response()->json(['status' => 'removed', 'message' => 'Product remove from wishlist!']);
+                }
+                return redirect()->route('wishlist')->with('message', 'Product remove from wishlist!');
             }
 
             // Add the product to the wishlist
@@ -1290,7 +1303,10 @@ class FrontendController extends Controller
 
         $request->session()->put('wishlist', $wishlist);
 
-        return response()->json(['status' => 'success', 'message' => 'Product added to wishlist!']);
+        if ($isAjax) {
+            return response()->json(['status' => 'success', 'message' => 'Product added to wishlist!']);
+        }
+        return redirect()->route('wishlist')->with('message', 'Product added to wishlist!');
     }
 
     // wishlist-badge

@@ -63,7 +63,7 @@ class Helper
 
     public static function priceAfterOffer($product_id){
         $product = Product::find($product_id);
-        $dicount = 0;
+        $price = 0;
 
 		if(auth()->check() == true){
 			$user = Auth::user();
@@ -73,57 +73,60 @@ class Helper
 				$product_assing = PartnerProduct::where('company_id', $partner->company_id)->where('product_id', $product->id)->first();
 
 				if(isset($product_assing->discount_price) && $product_assing->discount_price > 0){
-					if ($product_assing->discount_type && $product_assing->discount_type == 'percent') {
-						$dicount = $product->price - ($product_assing->discount_price * $product->price) / 100;
-					}else if($product_assing->discount_type && $product_assing->discount_type == 'amount'){
-						$dicount = $product->price - $product_assing->discount_price;
+					$type = $product_assing->discount_type ?? 'percent';
+					if ($type == 'percent') {
+						$price = $product->price - ($product_assing->discount_price * $product->price) / 100;
+					}else if($type == 'amount'){
+						$price = $product->price - $product_assing->discount_price;
 					}else{
-						$dicount = $product->price;
+						$price = $product->price;
 					}
 
-					return $dicount;
+					return $price;
 				}else if(isset($partner->discount) && $partner->discount > 0){
-					if ($partner->discount_type && $partner->discount_type == 'percent') {
-						$dicount = $product->price - ($partner->discount * $product->price) / 100;
-					}else if($partner->discount_type && $partner->discount_type == 'amount'){
-						$dicount = $product->price - $partner->discount;
+					$type = $partner->discount_type ?? 'percent';
+					if ($type == 'percent') {
+						$price = $product->price - ($partner->discount * $product->price) / 100;
+					}else if($type == 'amount'){
+						$price = $product->price - $partner->discount;
 					}else{
-						$dicount = $product->price;
+						$price = $product->price;
 					}
 
-					return $dicount;
-				}else if(isset($product->discount) && $product->discount > 0){
-					if ($product->discount_type && $product->discount_type == 'percent') {
-						$dicount = $product->price - ($product->discount * $product->price) / 100;
-					}else if($product->discount_type && $product->discount_type == 'amount'){
-						$dicount = $product->price - $product->discount;
-					}else{
-						$dicount = $product->price;
-					}
-
-					return $dicount;
-				}else{
-				    $dicount = $product->price;
-			        return $dicount;
+					return $price;
 				}
+			}
 
-
+			if(isset($product->discount) && $product->discount > 0){
+				$type = $product->discount_type ?? 'percent';
+				if ($type == 'percent') {
+					$price = $product->price - ($product->discount * $product->price) / 100;
+				}else if($type == 'amount'){
+					$price = $product->price - $product->discount;
+				}else{
+					$price = $product->price;
+				}
+				return $price;
 			}else{
-
-				$dicount = $product->price;
-				return $dicount;
+				$price = $product->price;
+				return $price;
 			}
 
 		}else{
-		    if ($product->discount_type && $product->discount_type == 'percent') {
-                $dicount = $product->price - ($product->discount * $product->price) / 100;
-            }else if($product->discount_type && $product->discount_type == 'amount'){
-                $dicount = $product->price - $product->discount;
-            }else{
-                $dicount = $product->price;
-            }
-			// $dicount = $product->price;
-			return $dicount;
+			if(isset($product->discount) && $product->discount > 0){
+				$type = $product->discount_type ?? 'percent';
+				if ($type == 'percent') {
+					$price = $product->price - ($product->discount * $product->price) / 100;
+				}else if($type == 'amount'){
+					$price = $product->price - $product->discount;
+				}else{
+					$price = $product->price;
+				}
+				return $price;
+			}else{
+				$price = $product->price;
+				return $price;
+			}
 		}
 
     }
@@ -131,7 +134,7 @@ class Helper
 
     public static function productDiscountAmount($product_id){
         $product = Product::find($product_id);
-        $dicount = 0;
+        $discount = 0;
 
 		if(auth()->check()){
 			$user = Auth::user();
@@ -141,80 +144,89 @@ class Helper
 				$product_assing = PartnerProduct::where('company_id', $partner->company_id)->where('product_id', $product->id)->first();
 
 				if(isset($product_assing->discount_price) && $product_assing->discount_price > 0){
-					if ($product_assing->discount_type && $product_assing->discount_type == 'percent') {
-						$dicount = ($product_assing->discount_price * $product->price) / 100;
-					}else if($product_assing->discount_type && $product_assing->discount_type == 'amount'){
-						$dicount = $product_assing->discount_price;
+					$type = $product_assing->discount_type ?? 'percent';
+					if ($type == 'percent') {
+						$discount = ($product_assing->discount_price * $product->price) / 100;
+					}else if($type == 'amount'){
+						$discount = $product_assing->discount_price;
 					}else{
-						$dicount = $product->discount;
+						$discount = $product->discount ?? 0;
 					}
 
-					return $dicount;
+					return $discount;
 				}
 
 				if(isset($partner->discount) && $partner->discount > 0){
-					if ($partner->discount_type && $partner->discount_type == 'percent') {
-						$dicount = ($partner->discount * $product->price) / 100;
-					}else if($partner->discount_type && $partner->discount_type == 'amount'){
-						$dicount = $partner->discount;
+					$type = $partner->discount_type ?? 'percent';
+					if ($type == 'percent') {
+						$discount = ($partner->discount * $product->price) / 100;
+					}else if($type == 'amount'){
+						$discount = $partner->discount;
 					}else{
-						$dicount = $product->discount;
+						$discount = $product->discount ?? 0;
 					}
 
-					return $dicount;
+					return $discount;
 				}
+			}
 
-				if(isset($product->discount) && $product->discount > 0){
-					if ($product->discount_type && $product->discount_type == 'percent') {
-						$dicount = ($product->discount * $product->price) / 100;
-					}else if($product->discount_type && $product->discount_type == 'amount'){
-						$dicount = $product->discount;
-					}else{
-						$dicount = $product->discount;
-					}
-
-					return $dicount;
+			if(isset($product->discount) && $product->discount > 0){
+				$type = $product->discount_type ?? 'percent';
+				if ($type == 'percent') {
+					$discount = ($product->discount * $product->price) / 100;
+				}else if($type == 'amount'){
+					$discount = $product->discount;
+				}else{
+					$discount = $product->discount ?? 0;
 				}
-
-
+				return $discount;
 			}else{
-
-				$dicount = $product->discount;
-				return $dicount;
+				return 0;
 			}
 
 		}else{
-		    return $dicount;
+			if(isset($product->discount) && $product->discount > 0){
+				$type = $product->discount_type ?? 'percent';
+				if ($type == 'percent') {
+					$discount = ($product->discount * $product->price) / 100;
+				}else if($type == 'amount'){
+					$discount = $product->discount;
+				}
+				return $discount;
+			}else{
+				return 0;
+			}
 		}
     }
 
     public static function partPriceFaterOffer($part_id){
         $part = ProductPart::find($part_id);
-        $dicount = 0;
+        $price = $part->price;
 
-        if ($part->discount_type && $part->discount_type == 'percent') {
-            $dicount = $part->price - ($part->discount * $part->price) / 100;
-        }else if($part->discount_type && $part->discount_type == 'amount'){
-            $dicount = $part->price - $part->discount;
+        if(isset($part->discount) && $part->discount > 0){
+            $type = $part->discount_type ?? 'percent';
+            if ($type == 'percent') {
+                $price = $part->price - ($part->discount * $part->price) / 100;
+            }else if($type == 'amount'){
+                $price = $part->price - $part->discount;
+            }
         }
 
-        if($dicount > 0){
-            return $dicount;
-        }else{
-            return $part->price;
-        }
-
+        return $price;
     }
 
     public static function partDiscountAmount($part_id){
         $part = ProductPart::find($part_id);
-        $dicount = 0;
-        if ($part->discount_type && $part->discount_type == 'percent') {
-            $dicount = ($part->discount * $part->price) / 100;
-        }else if($part->discount_type && $part->discount_type == 'amount'){
-            $dicount = $part->discount;
+        $discount = 0;
+        if(isset($part->discount) && $part->discount > 0){
+            $type = $part->discount_type ?? 'percent';
+            if ($type == 'percent') {
+                $discount = ($part->discount * $part->price) / 100;
+            }else if($type == 'amount'){
+                $discount = $part->discount;
+            }
         }
-        return $dicount;
+        return $discount;
     }
 
 
