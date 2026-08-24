@@ -334,6 +334,7 @@ Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
     Route::group(['prefix' => '/product'], function () {
         Route::get('/', [ProductController::class, 'index'])->name('admin.product');
         Route::get('/get/list', [ProductController::class, 'getList']);
+        Route::get('/export/pdf', [ProductController::class, 'exportPdf'])->name('admin.product.export.pdf');
         Route::post('/store', [ProductController::class, 'store'])->name('admin.product.store');
         Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('admin.product.edit');
         Route::any('/update/{id}', [ProductController::class, 'update'])->name('admin.product.update');

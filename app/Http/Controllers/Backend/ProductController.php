@@ -14,6 +14,7 @@ use App\Models\Brand;
 use App\Models\ProductAttribute;
 use App\Models\CustomField;
 use Session;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ProductController extends Controller
 {
@@ -116,6 +117,34 @@ class ProductController extends Controller
                 return $btn;
             })
             ->rawColumns(['thumbnail', 'checkbox', 'category_id', 'brand_id', 'discount_display', 'status', 'action'])->make(true);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $data = Product::query()->with(['category', 'brand']);
+
+        if (!empty($request->category)) {
+            $data->where('category_id', $request->category);
+        }
+
+        if ($request->brand) {
+            $data->where('brand_id', $request->brand);
+        }
+
+        if (!empty($request->name)) {
+            $data->where(function ($query) use ($request) {
+                $query->where('name', 'like', "%" . $request->name . "%");
+            });
+        }
+
+        $products = $data->orderBy('short_number', 'asc')->get();
+
+        $filter_category = (!empty($request->category)) ? Category::find($request->category) : null;
+        $filter_brand = (!empty($request->brand)) ? Brand::find($request->brand) : null;
+
+        $pdf = Pdf::loadView('backend.pages.product.pdf.product-list', compact('products', 'filter_category', 'filter_brand'))
+            ->setPaper('a4', 'landscape');
+        return $pdf->download('product-list-' . date('Y-m-d') . '.pdf');
     }
 
     public function getSubcategory(Request $request)

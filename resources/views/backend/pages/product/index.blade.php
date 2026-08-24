@@ -61,6 +61,10 @@
                                 <button type="button" class="btn btn-primary w-40" id="bulk_action_button"> Submit</button>
                             </div>
                             <div>
+                                @if (Helper::hasRight('product.view'))
+                                    <button type="button" class="btn btn-success" id="export_pdf_btn"><i
+                                            class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                                @endif
                                 @if (Helper::hasRight('product.create'))
                                     <button type="button" class="btn btn-primary btn-create-user create_form_btn"
                                         data-bs-toggle="modal" data-bs-target="#createModal"><i
@@ -313,6 +317,20 @@
 
                 $('#dataTable').DataTable().destroy();
                 getproduct(category, brand, name);
+            })
+
+            $(document).on('click', '#export_pdf_btn', function(e) {
+                e.preventDefault();
+                let category = $('#filter_form #category').val();
+                let brand = $('#filter_form #brand').val();
+                let name = $('#filter_form #name').val();
+
+                let url = "{{ route('admin.product.export.pdf') }}?" + $.param({
+                    category: category,
+                    brand: brand,
+                    name: name
+                });
+                window.open(url, '_blank');
             })
 
 
