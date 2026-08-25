@@ -221,15 +221,29 @@
             })
 
             function getProduct(product_id, main_div, row) {
+                let user_id = $('#' + main_div + ' .user_id').first().val();
                 $.ajax({
                     url: "{{ url('/admin/order/get/product') }}",
                     type: "GET",
                     data: {
-                        'product_id': product_id
+                        'product_id': product_id,
+                        'user_id': user_id
                     },
                     dataType: "json",
                     success: function(data) {
+                        // price field = MRP (before discount)
                         $('#' + main_div + ' .price' + row).val(data.price);
+
+                        // auto-fill the applicable offer (partner/product discount)
+                        if (data.discount && data.discount > 0 && (data.discount_type == 'percent' || data.discount_type == 'amount')) {
+                            $('#' + main_div + ' .discount_type' + row).val(data.discount_type);
+                            $('#' + main_div + ' .discount' + row).val(data.discount);
+                        } else {
+                            $('#' + main_div + ' .discount_type' + row).val('null');
+                            $('#' + main_div + ' .discount' + row).val('');
+                        }
+
+                        calculateTotal(main_div);
                     }
                 })
             }
@@ -240,7 +254,6 @@
                 let row = $(this).attr('data-row');
                 if (id != '') {
                     getProduct(id, 'createModal', row);
-                    calculateTotal('createModal');
                 }
             })
 
@@ -250,7 +263,6 @@
                 let row = $(this).attr('data-row');
                 if (id != '') {
                     getProduct(id, 'editModal', row);
-                    calculateTotal('editModal');
                 }
             })
 

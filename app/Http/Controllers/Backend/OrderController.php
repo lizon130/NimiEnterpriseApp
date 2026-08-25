@@ -146,7 +146,17 @@ class OrderController extends Controller
 
     public function getProduct(Request $request){
         $product = Product::find($request->product_id);
-        $product->price = ($product->discount) ? Helper::priceAfterOffer($product->id) : $product->price;
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        // price = MRP (original). Send the applicable offer separately so the form
+        // can fill MRP + Discount and let subtotal become the net amount.
+        $offer = Helper::productOffer($product->id, $request->user_id);
+
+        $product->discount = $offer['discount'];
+        $product->discount_type = $offer['type'];
+
         return json_encode($product);
     }
 
@@ -416,19 +426,10 @@ class OrderController extends Controller
         $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
         $billing = json_decode($order->billing_information);
 
-        // Calculate flat discount
-        $flatDiscount = 0;
-        $finalAmount = $order->total_price;
-
-        if ($order->total_price > 5000) {
-            $flatDiscount = round($order->total_price * 0.008);
-            $finalAmount = $order->total_price - $flatDiscount;
-        }
-
-        // ✅ FIXED: Use base_path instead of public_path to prevent server errors
+        // total_price already includes item discounts (net payable) - no extra discount applied
         $logoBase64 = $this->getLogoBase64();
 
-        return view('backend.pages.order.invoice', compact('order', 'order_details', 'billing', 'flatDiscount', 'finalAmount', 'logoBase64'));
+        return view('backend.pages.order.invoice', compact('order', 'order_details', 'billing', 'logoBase64'));
     }
 
     /**
@@ -444,20 +445,11 @@ class OrderController extends Controller
         $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
         $billing = json_decode($order->billing_information);
 
-        // Calculate flat discount
-        $flatDiscount = 0;
-        $finalAmount = $order->total_price;
-
-        if ($order->total_price > 5000) {
-            $flatDiscount = round($order->total_price * 0.008);
-            $finalAmount = $order->total_price - $flatDiscount;
-        }
-
-        // ✅ FIXED: Use base_path instead of public_path
+        // total_price already includes item discounts (net payable) - no extra discount applied
         $logoBase64 = $this->getLogoBase64();
 
-        $pdf = Pdf::loadView('backend.pages.order.invoice-pdf', compact('order', 'order_details', 'billing', 'flatDiscount', 'finalAmount', 'logoBase64'));
-        $pdf->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('backend.pages.order.invoice-pdf', compact('order', 'order_details', 'billing', 'logoBase64'));
+        $pdf->setPaper('a4', 'portrait');
 
         $safeInvoiceNo = str_replace(['/', '\\'], '-', $order->invoice_no);
 
@@ -477,19 +469,10 @@ class OrderController extends Controller
         $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
         $billing = json_decode($order->billing_information);
 
-        // Calculate flat discount
-        $flatDiscount = 0;
-        $finalAmount = $order->total_price;
-
-        if ($order->total_price > 5000) {
-            $flatDiscount = round($order->total_price * 0.008);
-            $finalAmount = $order->total_price - $flatDiscount;
-        }
-
-        // ✅ FIXED: Use base_path instead of public_path
+        // total_price already includes item discounts (net payable) - no extra discount applied
         $logoBase64 = $this->getLogoBase64();
 
-        return view('backend.pages.order.invoice-pdf', compact('order', 'order_details', 'billing', 'flatDiscount', 'finalAmount', 'logoBase64'));
+        return view('backend.pages.order.invoice-pdf', compact('order', 'order_details', 'billing', 'logoBase64'));
     }
 
    private function getLogoBase64()

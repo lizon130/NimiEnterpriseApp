@@ -904,19 +904,23 @@ class FrontendController extends Controller
                 $order_detail->type = $item['type'];
                 $order_detail->quantity = $item['quantity'];
 
+                // unit_price = MRP, discount = the applied offer, subtotal = net amount.
+                // This lets the invoice show MRP / Discount / Rate correctly.
                 if ($item['type'] == 'product') {
-                    $order_detail->unit_price = Helper::priceAfterOffer($item['product']['id']);
+                    $net_price = Helper::priceAfterOffer($item['product']['id']);
+                    $order_detail->unit_price = $item['product']['price'];
+
+                    $offer = Helper::productOffer($item['product']['id'], $order->user_id);
+                    $order_detail->discount_type = $offer['discount'] > 0 ? $offer['type'] : '';
+                    $order_detail->discount = $offer['discount'];
                 }else{
-                    $order_detail->unit_price = Helper::partPriceFaterOffer($item['product']['id']);
+                    $net_price = Helper::partPriceFaterOffer($item['product']['id']);
+                    $order_detail->unit_price = $item['product']['price'];
+                    $order_detail->discount_type = ($item['product']->discount ?? 0) > 0 ? ($item['product']['discount_type'] ?? '') : '';
+                    $order_detail->discount = $item['product']->discount ?? 0;
                 }
 
-                $order_detail->discount_type = $item['product']['discount_type'] ?? '';
-                $order_detail->discount = $item['product']['discount'];
-                if ($item['type'] == 'product') {
-                    $order_detail->subtotal = $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
-                }else{
-                    $order_detail->subtotal = $item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id']));
-                }
+                $order_detail->subtotal = $item['quantity'] * $net_price;
                 $order_detail->save();
             }
             $request->session()->forget('cartlist');
@@ -1121,19 +1125,23 @@ class FrontendController extends Controller
                     $order_detail->type = $item['type'];
                     $order_detail->quantity = $item['quantity'];
 
+                    // unit_price = MRP, discount = the applied offer, subtotal = net amount.
+                    // This lets the invoice show MRP / Discount / Rate correctly.
                     if ($item['type'] == 'product') {
-                        $order_detail->unit_price = Helper::priceAfterOffer($item['product']['id']);
+                        $net_price = Helper::priceAfterOffer($item['product']['id']);
+                        $order_detail->unit_price = $item['product']['price'];
+
+                        $offer = Helper::productOffer($item['product']['id'], $order->user_id);
+                        $order_detail->discount_type = $offer['discount'] > 0 ? $offer['type'] : '';
+                        $order_detail->discount = $offer['discount'];
                     }else{
-                        $order_detail->unit_price = Helper::partPriceFaterOffer($item['product']['id']);
+                        $net_price = Helper::partPriceFaterOffer($item['product']['id']);
+                        $order_detail->unit_price = $item['product']['price'];
+                        $order_detail->discount_type = ($item['product']->discount ?? 0) > 0 ? ($item['product']['discount_type'] ?? '') : '';
+                        $order_detail->discount = $item['product']->discount ?? 0;
                     }
 
-                    $order_detail->discount_type = $item['product']['discount_type'] ?? '';
-                    $order_detail->discount = $item['product']['discount'];
-                    if ($item['type'] == 'product') {
-                        $order_detail->subtotal = $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
-                    }else{
-                        $order_detail->subtotal = $item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id']));
-                    }
+                    $order_detail->subtotal = $item['quantity'] * $net_price;
                     $order_detail->save();
                 }
                 $request->session()->forget('cartlist');

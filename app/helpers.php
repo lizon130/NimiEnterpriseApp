@@ -131,6 +131,38 @@ class Helper
 
     }
 
+    /**
+     * Get the applicable offer (discount + type) for a product for a given partner user.
+     * Same precedence as priceAfterOffer(): PartnerProduct > Company (partner) > Product.
+     */
+    public static function productOffer($product_id, $user_id = null){
+        $product = Product::find($product_id);
+        if (!$product) {
+            return ['discount' => 0, 'type' => null];
+        }
+
+        if ($user_id) {
+            $partner = Company::where('user_id', $user_id)->where('status', 1)->first();
+            if ($partner) {
+                $product_assign = PartnerProduct::where('company_id', $partner->company_id)->where('product_id', $product->id)->first();
+
+                if (isset($product_assign->discount_price) && $product_assign->discount_price > 0) {
+                    return ['discount' => $product_assign->discount_price, 'type' => $product_assign->discount_type ?? 'percent'];
+                }
+
+                if (isset($partner->discount) && $partner->discount > 0) {
+                    return ['discount' => $partner->discount, 'type' => $partner->discount_type ?? 'percent'];
+                }
+            }
+        }
+
+        if (isset($product->discount) && $product->discount > 0) {
+            return ['discount' => $product->discount, 'type' => $product->discount_type ?? 'percent'];
+        }
+
+        return ['discount' => 0, 'type' => null];
+    }
+
 
     public static function productDiscountAmount($product_id){
         $product = Product::find($product_id);
