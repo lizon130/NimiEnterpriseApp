@@ -61,11 +61,18 @@
                 </div>
             </div>
             <div class="card-body table-responsive">
+                <style>
+                    #dataTable .order-products { min-width: 150px; max-width: 240px; }
+                    #dataTable .order-item + .order-item { margin-top: 4px; }
+                    #dataTable .order-item-name { min-width: 0; font-size: 0.875rem; }
+                    #dataTable .toggle-items { text-decoration: none; }
+                </style>
                 <table class="table table-bordered" id="dataTable">
                     <thead>
                         <tr>
                             <th>Order Date</th>
                             <th>Partner Name</th>
+                            <th>Products</th>
                             <th>Price</th>
                             <th>Status</th>
                             @auth
@@ -109,6 +116,12 @@
                             name: 'user_id'
                         },
                         {
+                            data: 'products',
+                            name: 'products',
+                            orderable: false,
+                            searchable: false
+                        },
+                        {
                             data: 'total_price',
                             name: 'total_price'
                         },
@@ -129,6 +142,15 @@
                 });
             }
             getorders();
+
+            // expand / collapse extra order items
+            $(document).on('click', '.toggle-items', function(e) {
+                e.preventDefault();
+                let wrap = $(this).closest('.order-products');
+                wrap.find('.extra-item').toggleClass('d-none');
+                let hidden = wrap.find('.extra-item.d-none').length;
+                $(this).text(hidden > 0 ? '+ ' + hidden + ' more' : '− show less');
+            })
 
             $(document).on('click', '#filterBtn', function(e) {
                 e.preventDefault();

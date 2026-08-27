@@ -59,7 +59,7 @@ class OrderController extends Controller
 
     public function getList(Request $request){
 
-        $data = Order::query();
+        $data = Order::query()->with(['details.product', 'details.part']);
 
         if ($this->user->role == 2 || $this->user->role == 4 || $this->user->role == 5) {
             $data->where('user_id', $this->user->id);
@@ -94,6 +94,39 @@ class OrderController extends Controller
         })
         ->editColumn('user_id', function ($row) {
             return optional($row->company)->first_name ?? '-' .' '. optional($row->company)->last_name ?? '-';
+        })
+        ->editColumn('products', function ($row) {
+            if ($row->details->isEmpty()) {
+                return '<span class="text-muted">-</span>';
+            }
+
+            $count = $row->details->count();
+            $collapsed = $count > 2;
+
+            $items = '';
+            foreach ($row->details as $i => $item) {
+                $name = $item->product->name ?? $item->part->name ?? 'N/A';
+                $part = $item->part
+                    ? '<small class="text-muted d-block text-truncate">Part: ' . e($item->part->name ?? 'N/A') . '</small>'
+                    : '';
+                $extra = ($collapsed && $i >= 2) ? ' extra-item d-none' : '';
+
+                $items .= '<div class="order-item' . $extra . '">'
+                    . '<div class="d-flex justify-content-between align-items-start gap-2">'
+                    . '<div class="order-item-name"><span class="d-block text-truncate" title="' . e($name) . '">' . e($name) . '</span>' . $part . '</div>'
+                    . '<span class="badge bg-secondary flex-shrink-0">× ' . (int) $item->quantity . '</span>'
+                    . '</div></div>';
+            }
+
+            $html = '<div class="order-products">';
+            $html .= '<span class="badge bg-light text-dark border mb-1"><i class="fa-solid fa-box-open"></i> ' . $count . ' item' . ($count > 1 ? 's' : '') . '</span>';
+            $html .= $items;
+            if ($collapsed) {
+                $html .= '<a href="javascript:void(0)" class="toggle-items small fw-bold d-block mt-1">+ ' . ($count - 2) . ' more</a>';
+            }
+            $html .= '</div>';
+
+            return $html;
         })
         ->editColumn('date', function ($row) {
             return date('d M Y', strtotime($row->date));
@@ -130,7 +163,7 @@ class OrderController extends Controller
             }
             return $btn;
         })
-        ->rawColumns(['invoice_no','user_id','status','action'])->make(true);
+        ->rawColumns(['invoice_no','user_id','products','status','action'])->make(true);
     }
 
     public function row($number){

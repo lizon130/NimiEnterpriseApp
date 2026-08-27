@@ -41,13 +41,13 @@
                 <h4>Invoice Details</h4>
 
                 <div>
-                    <a href="{{ route('admin.order.invoice.view', $order->id) }}" target="_blank" class="btn btn-primary">
+                    {{-- <a href="{{ route('admin.order.invoice.view', $order->id) }}" target="_blank" class="btn btn-primary">
                         <i class="fa-solid fa-eye"></i> View Invoice
                     </a>
 
                     <a href="{{ route('admin.order.invoice.pdf', $order->id) }}" class="btn btn-success">
                         <i class="fa-solid fa-download"></i> Download PDF
-                    </a>
+                    </a> --}}
 
                     <a href="{{ route('admin.order') }}" class="btn btn-secondary">
                         <i class="fa-solid fa-arrow-left"></i> Back
