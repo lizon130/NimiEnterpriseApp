@@ -205,6 +205,12 @@
         min-height: 300px;
         padding: 18px !important;
         box-shadow: 0 12px 35px rgba(17, 24, 39, .08);
+        transition: opacity .15s ease;
+    }
+
+    #productListing.listing-loading {
+        opacity: .45;
+        pointer-events: none;
     }
 
     .product-pagination {
@@ -232,6 +238,138 @@
         background: var(--primary);
         color: #fff;
         border-color: var(--primary);
+    }
+
+    /* ---------- Live search suggestions ---------- */
+    #liveSearchWrapper {
+        position: relative;
+    }
+
+    .product-suggest-box {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        z-index: 1060;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 18px 45px rgba(17, 24, 39, .18);
+        max-height: 400px;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 6px;
+        animation: suggestSlideDown .18s ease;
+    }
+
+    @keyframes suggestSlideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ps-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--dark);
+        transition: background .12s ease;
+    }
+
+    .ps-item:hover,
+    .ps-item.active {
+        background: var(--primary-soft);
+    }
+
+    .ps-thumb {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+    }
+
+    .ps-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .ps-info {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .ps-name {
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.35;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .ps-name mark {
+        background: rgba(248, 86, 6, .12);
+        color: var(--primary);
+        font-weight: 800;
+        border-radius: 3px;
+        padding: 0 1px;
+    }
+
+    .ps-meta {
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        gap: 10px;
+        margin-top: 2px;
+    }
+
+    .ps-price {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--primary);
+        white-space: nowrap;
+    }
+
+    .ps-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 18px 0;
+        color: var(--muted);
+        font-size: 13px;
+    }
+
+    .ps-empty {
+        padding: 16px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .ps-footer {
+        padding: 8px 10px 4px;
+        border-top: 1px solid var(--border);
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--muted);
+        text-align: center;
     }
 
     @media (max-width: 991px) {
@@ -427,10 +565,13 @@
 
         <div class="col-lg-9 col-sm-12">
             <form action="" class="products__form d-flex flex-column flex-md-row align-items-center gap-3" id="productSearchForm">
-                <div class="form-floating mb-3 mb-md-0 w-100">
+                <div class="form-floating mb-3 mb-md-0 w-100" id="liveSearchWrapper">
                     <input type="text" class="form-control name" id="productNameInput"
-                        placeholder="{{ trans('language.label_name') }}" name="name">
+                        placeholder="{{ trans('language.label_name') }}" name="name" autocomplete="off"
+                        spellcheck="false">
                     <label for="productNameInput">{{ trans('language.label_name') }}</label>
+
+                    <div id="productSuggestBox" class="product-suggest-box d-none"></div>
                 </div>
 
                 <div class="form-floating mb-3 mb-md-0 w-100">
@@ -455,8 +596,16 @@
 <script type="text/javascript">
     let current_category = "{{ optional($current_category)->id }}";
 
-    function getProducts(url) {
-        $('body').addClass('loader-open');
+    function getProducts(url, showLoader) {
+        showLoader = showLoader !== false;
+
+        if (showLoader) {
+            $('body').addClass('loader-open');
+        } else {
+            // Subtle dim for live-typing updates (smoother than a full-page loader)
+            $('#productListing').addClass('listing-loading');
+        }
+
         let form = document.getElementById('productSearchForm');
         var formData = new FormData(form);
 
@@ -507,13 +656,169 @@
             dataType: "json",
             success: function(response) {
                 $('body').removeClass('loader-open');
-                $('#productListing').html(response.products_html);
+                $('#productListing').removeClass('listing-loading').html(response.products_html);
                 $('#product_pagination').html(response.pagination_html);
+            },
+            error: function() {
+                $('body').removeClass('loader-open');
+                $('#productListing').removeClass('listing-loading');
             }
         })
     }
 
     getProducts(null);
+
+    /* ---------- Live search (suggestions + live grid update) ---------- */
+    let suggestXhr = null;
+    let suggestTimer = null;
+    let liveSearchTimer = null;
+    let suggestCache = {};
+    let suggestItems = [];
+    let activeIndex = -1;
+
+    const SUGGEST_URL = "{{ route('product.suggest') }}";
+    const noResultText = "{{ trans('language.no_product_found') }}";
+
+    function escapeHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, s =>
+            ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[s]));
+    }
+
+    function highlightMatch(text, q) {
+        if (!text) return '';
+        const idx = text.toLowerCase().indexOf(q.toLowerCase());
+        if (idx === -1) return escapeHtml(text);
+        return escapeHtml(text.slice(0, idx)) +
+            '<mark>' + escapeHtml(text.slice(idx, idx + q.length)) + '</mark>' +
+            escapeHtml(text.slice(idx + q.length));
+    }
+
+    function showSuggestLoading() {
+        $('#productSuggestBox')
+            .removeClass('d-none')
+            .html('<div class="ps-loading"><span class="spinner-border spinner-border-sm"></span></div>');
+    }
+
+    function renderSuggestions(items, q) {
+        const $box = $('#productSuggestBox');
+        suggestItems = items || [];
+        activeIndex = -1;
+
+        if (!suggestItems.length) {
+            $box.removeClass('d-none')
+                .html('<div class="ps-empty">' + escapeHtml(noResultText) + '</div>');
+            return;
+        }
+
+        let html = '';
+        suggestItems.forEach(function (item) {
+            const img = item.thumbnail
+                ? '<img src="' + escapeHtml(item.thumbnail) + '" alt="" loading="lazy">'
+                : '<i class="fa-solid fa-box-open"></i>';
+
+            html += '<a class="ps-item" href="' + escapeHtml(item.url) + '">' +
+                '<div class="ps-thumb">' + img + '</div>' +
+                '<div class="ps-info">' +
+                    '<div class="ps-name">' + highlightMatch(item.name, q) + '</div>' +
+                    '<div class="ps-meta">' +
+                        (item.code ? '<span>Code: ' + escapeHtml(item.code) + '</span>' : '') +
+                        (item.brand ? '<span>' + escapeHtml(item.brand) + '</span>' : '') +
+                    '</div>' +
+                '</div>' +
+                (item.price ? '<div class="ps-price">৳' + escapeHtml(item.price) + '</div>' : '') +
+            '</a>';
+        });
+
+        html += '<div class="ps-footer">↑ ↓ to navigate &nbsp;•&nbsp; Enter to open</div>';
+        $box.removeClass('d-none').html(html);
+    }
+
+    function fetchSuggestions(q) {
+        if (suggestXhr && suggestXhr.readyState !== 4) {
+            suggestXhr.abort();
+        }
+        showSuggestLoading();
+
+        suggestXhr = $.get(SUGGEST_URL, { q: q }, null, 'json')
+            .done(function (response) {
+                suggestCache[q] = response.suggestions;
+                renderSuggestions(response.suggestions, q);
+            })
+            .fail(function (xhr) {
+                if (xhr.statusText !== 'abort' && xhr.status !== 0) {
+                    $('#productSuggestBox').addClass('d-none');
+                }
+            });
+    }
+
+    $('#productNameInput').on('input', function () {
+        const q = $(this).val().trim();
+        clearTimeout(suggestTimer);
+        clearTimeout(liveSearchTimer);
+
+        if (q.length < 1) {
+            $('#productSuggestBox').addClass('d-none').empty();
+            suggestItems = [];
+            current_category = '';
+            liveSearchTimer = setTimeout(function () { getProducts(null, false); }, 300);
+            return;
+        }
+
+        // Suggestions: instant for cached queries, debounced for new ones
+        suggestTimer = setTimeout(function () {
+            if (suggestCache[q]) {
+                renderSuggestions(suggestCache[q], q);
+            } else {
+                fetchSuggestions(q);
+            }
+        }, suggestCache[q] ? 0 : 180);
+
+        // Live grid update (debounced, feels instant but avoids request spam)
+        current_category = '';
+        liveSearchTimer = setTimeout(function () { getProducts(null, false); }, 450);
+    });
+
+    $('#productNameInput').on('focus', function () {
+        const q = $(this).val().trim();
+        if (q.length >= 1) {
+            if (suggestCache[q]) renderSuggestions(suggestCache[q], q);
+            else fetchSuggestions(q);
+        }
+    });
+
+    $('#productNameInput').on('keydown', function (e) {
+        const $box = $('#productSuggestBox');
+        if ($box.hasClass('d-none') || !suggestItems.length) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            activeIndex = e.key === 'ArrowDown'
+                ? (activeIndex + 1) % suggestItems.length
+                : (activeIndex - 1 + suggestItems.length) % suggestItems.length;
+
+            const $items = $box.find('.ps-item').removeClass('active');
+            $items.eq(activeIndex).addClass('active');
+            $box.scrollTop($items.eq(activeIndex).position().top + $box.scrollTop() - 80);
+        } else if (e.key === 'Enter' && activeIndex >= 0) {
+            e.preventDefault();
+            window.location.href = suggestItems[activeIndex].url;
+        } else if (e.key === 'Escape') {
+            $box.addClass('d-none');
+        }
+    });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#liveSearchWrapper').length) {
+            $('#productSuggestBox').addClass('d-none');
+        }
+    });
+
+    $('#productSearchForm').on('submit', function (e) {
+        e.preventDefault();
+        $('#productSuggestBox').addClass('d-none');
+        current_category = '';
+        getProducts(null);
+    });
 
     $(document).on('click', '#searchBtn', function(e) {
         e.preventDefault();

@@ -482,10 +482,12 @@ class FrontendController extends Controller
         $subcategory = null;
         $products = Product::where('status', 1);
         if ($request->name) {
-            $products->where('name','like', "%" .$request->name ."%" )
-			->orWhereHas('brand', function($products) use ($request) {
-				$products->where('title', 'like', "%" . $request->name . "%");
-			});
+            $products->where(function ($query) use ($request) {
+                $query->where('name', 'like', "%" . $request->name . "%")
+                    ->orWhereHas('brand', function ($q) use ($request) {
+                        $q->where('title', 'like', "%" . $request->name . "%");
+                    });
+            });
         }
         if ($request->model) {
             $products->where('code','like', "%" .$request->model ."%" );
@@ -516,7 +518,15 @@ class FrontendController extends Controller
             });
         }
 
-        $products = $products->orderBy('short_number', 'asc')->paginate(20);
+        // Relevance ordering: names starting with the search term first
+        if ($request->name) {
+            $namePrefix = strtolower($request->name) . '%';
+            $products->orderByRaw("CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END, short_number ASC", [$namePrefix]);
+        } else {
+            $products->orderBy('short_number', 'asc');
+        }
+
+        $products = $products->paginate(20);
 		$productsHtml = view('frontend.pages.search.products', compact('products', 'subcategory'))->render();
 		$paginationHtml = json_decode(json_encode($products));
 
@@ -557,6 +567,61 @@ class FrontendController extends Controller
             'pagination_html' => ($productsHtml) ? $pagination : ''
         ]);
 
+    }
+
+    /**
+     * Lightweight live-search endpoint for the products page autocomplete.
+     * Returns the most relevant matches (name prefix match first, then name/code/brand contains).
+     */
+    public function productSuggest(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+
+        if ($q === '' || mb_strlen($q) < 1) {
+            return response()->json(['suggestions' => []]);
+        }
+
+        $locale = Session::get('language') ?? 'en';
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], mb_strtolower($q));
+        $like = '%' . $escaped . '%';
+        $prefix = $escaped . '%';
+
+        $suggestions = Product::query()
+            ->where('status', 1)
+            ->where(function ($query) use ($like) {
+                $query->whereRaw('LOWER(name) LIKE ?', [$like])
+                    ->orWhereRaw('LOWER(code) LIKE ?', [$like])
+                    ->orWhereHas('brand', function ($b) use ($like) {
+                        $b->whereRaw('LOWER(title) LIKE ?', [$like]);
+                    });
+            })
+            ->select('id', 'name', 'slug', 'thumbnail', 'code', 'price', 'discount', 'discount_type', 'short_number')
+            ->with('brand:id,title')
+            ->orderByRaw("CASE WHEN LOWER(name) LIKE ? THEN 0 WHEN LOWER(code) LIKE ? THEN 1 ELSE 2 END, short_number ASC", [$prefix, $prefix])
+            ->limit(8)
+            ->get();
+
+        return response()->json([
+            'suggestions' => $suggestions->map(function ($product) use ($locale) {
+                $price = (float) $product->price;
+                $discount = (float) ($product->discount ?? 0);
+
+                if ($discount > 0) {
+                    $price = ($product->discount_type === 'amount')
+                        ? $price - $discount
+                        : $price - ($price * $discount) / 100;
+                }
+
+                return [
+                    'name' => $product->getTranslation($locale, 'title') ?? $product->name,
+                    'code' => $product->code,
+                    'url' => url('product/' . $product->slug),
+                    'thumbnail' => $product->thumbnail ? asset('uploads/product-images/' . $product->thumbnail) : null,
+                    'brand' => $product->brand?->title,
+                    'price' => $price > 0 ? number_format($price, 2) : null,
+                ];
+            })->values(),
+        ]);
     }
 
     public function product_details($id) {
@@ -1973,3 +2038,4 @@ class FrontendController extends Controller
     }
 
 }
+

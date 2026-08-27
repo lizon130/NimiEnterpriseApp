@@ -138,6 +138,7 @@ Route::controller(FrontendController::class)->group(function () {
     Route::get('products/{id}', 'products');
     Route::get('products', 'allProducts')->name('products');
     Route::post('search-products', 'searchProducts')->name('search.products');
+    Route::get('product-suggest', 'productSuggest')->name('product.suggest');
     Route::get('product/{slug}', 'product_details')->name('product.details');
     Route::get('wishlist', 'wishlist')->name('wishlist');
     Route::get('catalogues', 'catalogues')->name('catalogues');
