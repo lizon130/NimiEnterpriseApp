@@ -105,7 +105,7 @@ class LoginController extends Controller
                     }
                 }
                 // Authentication passed...
-                return redirect()->route('home');
+                return redirect()->route('products');
             }else{
                 return redirect()->back()->withErrors(['error' => 'Invalid credentials.']);
             }

@@ -588,7 +588,7 @@
 <header id="header" class="fixed-top">
     <div class="container d-flex gap-2 align-items-center">
         <div class="flex-fill logo me-auto d-flex align-items-center ms-5">
-            <a href="{{ url('/') }}">
+            <a href="{{ route('products') }}">
                 <img src="{{ asset('assets/img/Logo.png') }}" alt="Logo">
             </a>
         </div>

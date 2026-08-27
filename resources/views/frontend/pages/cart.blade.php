@@ -496,62 +496,51 @@
                                                         <div class="cart__card__request--count">
 
                                                             <a href="{{ route('decrement.from.cart', $cart['product']['id']) }}"
-                                                                class="wishlist__card--sign" aria-label="Decrease quantity">
-
+                                                                class="wishlist__card--sign cart-decrement"
+                                                                data-id="{{ $cart['product']['id'] }}"
+                                                                data-unit="{{ Helper::priceAfterOffer($product->id) }}"
+                                                                aria-label="Decrease quantity">
                                                                 <i class="fa-solid fa-minus"></i>
-
                                                             </a>
 
-
-                                                            <span class="wishlist__card--number">
+                                                            <span class="wishlist__card--number cart-qty" id="qty-{{ $cart['product']['id'] }}">
                                                                 {{ $cart['quantity'] ?? 0 }}
                                                             </span>
 
-
                                                             <a href="{{ route('increment.from.cart', $cart['product']['id']) }}"
-                                                                class="wishlist__card--sign" aria-label="Increase quantity">
-
+                                                                class="wishlist__card--sign cart-increment"
+                                                                data-id="{{ $cart['product']['id'] }}"
+                                                                data-unit="{{ Helper::priceAfterOffer($product->id) }}"
+                                                                aria-label="Increase quantity">
                                                                 <i class="fa-solid fa-plus"></i>
-
                                                             </a>
 
                                                         </div>
                                                     </td>
 
 
-                                                    <td class="text-center">
-
-                                                        <div>
-                                                            ৳{{ number_format(Helper::priceAfterOffer($product->id), 2) }}
-                                                        </div>
-
+                                                    <td class="text-center row-unit-price" data-id="{{ $cart['product']['id'] }}" data-unit="{{ Helper::priceAfterOffer($product->id) }}">
+                                                        <div>৳{{ number_format(Helper::priceAfterOffer($product->id), 2) }}</div>
                                                         @if ($product->discount)
-                                                            <small>
-                                                                <del>
-                                                                    ৳{{ number_format($product->price, 2) }}
-                                                                </del>
-                                                            </small>
+                                                            <small><del>৳{{ number_format($product->price, 2) }}</del></small>
                                                         @endif
-
                                                     </td>
 
 
                                                     <td class="text-center">
-                                                        <strong>
+                                                        <strong id="row-total-{{ $cart['product']['id'] }}">
                                                             ৳{{ number_format($cart['quantity'] * Helper::priceAfterOffer($product->id), 2) }}
                                                         </strong>
                                                     </td>
 
 
                                                     <td class="text-center">
-
                                                         <a href="{{ route('remove.from.cart', $cart['product']['id']) }}"
-                                                            class="text-danger" title="Remove from cart">
-
+                                                            class="text-danger cart-remove"
+                                                            data-id="{{ $cart['product']['id'] }}"
+                                                            title="Remove from cart">
                                                             <i class="fa-solid fa-trash"></i>
-
                                                         </a>
-
                                                     </td>
 
                                                 </tr>
@@ -597,62 +586,51 @@
                                                         <div class="cart__card__request--count">
 
                                                             <a href="{{ route('decrement.from.cart', $cart['product']['id']) }}"
-                                                                class="wishlist__card--sign" aria-label="Decrease quantity">
-
+                                                                class="wishlist__card--sign cart-decrement"
+                                                                data-id="{{ $cart['product']['id'] }}"
+                                                                data-unit="{{ Helper::partPriceFaterOffer($part->id) }}"
+                                                                aria-label="Decrease quantity">
                                                                 <i class="fa-solid fa-minus"></i>
-
                                                             </a>
 
-
-                                                            <span class="wishlist__card--number">
+                                                            <span class="wishlist__card--number cart-qty" id="qty-{{ $cart['product']['id'] }}">
                                                                 {{ $cart['quantity'] ?? 0 }}
                                                             </span>
 
-
                                                             <a href="{{ route('increment.from.cart', $cart['product']['id']) }}"
-                                                                class="wishlist__card--sign" aria-label="Increase quantity">
-
+                                                                class="wishlist__card--sign cart-increment"
+                                                                data-id="{{ $cart['product']['id'] }}"
+                                                                data-unit="{{ Helper::partPriceFaterOffer($part->id) }}"
+                                                                aria-label="Increase quantity">
                                                                 <i class="fa-solid fa-plus"></i>
-
                                                             </a>
 
                                                         </div>
                                                     </td>
 
 
-                                                    <td class="text-center">
-
-                                                        <div>
-                                                            ৳{{ number_format(Helper::partPriceFaterOffer($part->id), 2) }}
-                                                        </div>
-
+                                                    <td class="text-center row-unit-price" data-id="{{ $cart['product']['id'] }}" data-unit="{{ Helper::partPriceFaterOffer($part->id) }}">
+                                                        <div>৳{{ number_format(Helper::partPriceFaterOffer($part->id), 2) }}</div>
                                                         @if ($part->discount)
-                                                            <small>
-                                                                <del>
-                                                                    ৳{{ number_format($part->price, 2) }}
-                                                                </del>
-                                                            </small>
+                                                            <small><del>৳{{ number_format($part->price, 2) }}</del></small>
                                                         @endif
-
                                                     </td>
 
 
                                                     <td class="text-center">
-                                                        <strong>
+                                                        <strong id="row-total-{{ $cart['product']['id'] }}">
                                                             ৳{{ number_format($cart['quantity'] * Helper::partPriceFaterOffer($part->id), 2) }}
                                                         </strong>
                                                     </td>
 
 
                                                     <td class="text-center">
-
                                                         <a href="{{ route('remove.from.cart', $cart['product']['id']) }}"
-                                                            class="text-danger" title="Remove from cart">
-
+                                                            class="text-danger cart-remove"
+                                                            data-id="{{ $cart['product']['id'] }}"
+                                                            title="Remove from cart">
                                                             <i class="fa-solid fa-trash"></i>
-
                                                         </a>
-
                                                     </td>
 
                                                 </tr>
@@ -686,7 +664,7 @@
                                     Subtotal
                                 </h6>
 
-                                <h5 class="cart-summary-price">
+                                <h5 class="cart-summary-price" id="cart-subtotal">
                                     ৳{{ number_format($total_price, 2) }}
                                 </h5>
 
@@ -758,5 +736,154 @@
         </div>
 
     </div>
+
+@push('footer')
+<script>
+(function ($) {
+    'use strict';
+
+    /* ----------------------------------------------------------------
+       Helpers
+    ---------------------------------------------------------------- */
+    function formatBDT(num) {
+        return '৳' + parseFloat(num).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Recalculate the grand subtotal from all visible row totals
+    function recalcSubtotal() {
+        var total = 0;
+        $('.row-unit-price').each(function () {
+            var id  = $(this).data('id');
+            var qty = parseInt($('#qty-' + id).text(), 10) || 0;
+            var unit = parseFloat($(this).data('unit')) || 0;
+            total += qty * unit;
+        });
+        $('#cart-subtotal').text(formatBDT(total));
+    }
+
+    /* ----------------------------------------------------------------
+       INCREMENT
+    ---------------------------------------------------------------- */
+    $(document).on('click', '.cart-increment', function (e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var id   = $btn.data('id');
+        var unit = parseFloat($btn.data('unit')) || 0;
+
+        // Optimistic UI — bump qty immediately
+        var $qtyEl = $('#qty-' + id);
+        var newQty = parseInt($qtyEl.text(), 10) + 1;
+        $qtyEl.text(newQty);
+        $('#row-total-' + id).text(formatBDT(newQty * unit));
+        recalcSubtotal();
+
+        $.ajax({
+            url:      $btn.attr('href'),
+            method:   'GET',
+            dataType: 'json',
+            headers:  { 'X-Requested-With': 'XMLHttpRequest' },
+            error: function () {
+                // Roll back on failure
+                newQty = Math.max(1, newQty - 1);
+                $qtyEl.text(newQty);
+                $('#row-total-' + id).text(formatBDT(newQty * unit));
+                recalcSubtotal();
+                toastr.error('Could not update quantity. Please try again.');
+            }
+        });
+    });
+
+    /* ----------------------------------------------------------------
+       DECREMENT
+    ---------------------------------------------------------------- */
+    $(document).on('click', '.cart-decrement', function (e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var id   = $btn.data('id');
+        var unit = parseFloat($btn.data('unit')) || 0;
+
+        var $qtyEl  = $('#qty-' + id);
+        var current = parseInt($qtyEl.text(), 10) || 1;
+
+        if (current <= 1) {
+            // Will remove — confirm first
+            if (!confirm('Remove this item from your cart?')) return;
+            removeRow($btn, id);
+            return;
+        }
+
+        // Optimistic UI
+        var newQty = current - 1;
+        $qtyEl.text(newQty);
+        $('#row-total-' + id).text(formatBDT(newQty * unit));
+        recalcSubtotal();
+
+        $.ajax({
+            url:      $btn.attr('href'),
+            method:   'GET',
+            dataType: 'json',
+            headers:  { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function (res) {
+                if (res.removed) removeRow($btn, id);
+            },
+            error: function () {
+                newQty = current; // roll back
+                $qtyEl.text(newQty);
+                $('#row-total-' + id).text(formatBDT(newQty * unit));
+                recalcSubtotal();
+                toastr.error('Could not update quantity. Please try again.');
+            }
+        });
+    });
+
+    /* ----------------------------------------------------------------
+       REMOVE
+    ---------------------------------------------------------------- */
+    $(document).on('click', '.cart-remove', function (e) {
+        e.preventDefault();
+        var $btn = $(this);
+        var id   = $btn.data('id');
+
+        if (!confirm('Remove this item from your cart?')) return;
+        removeRow($btn, id);
+    });
+
+    function removeRow($btn, id) {
+        $.ajax({
+            url:      $btn.attr('href'),
+            method:   'GET',
+            dataType: 'json',
+            headers:  { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function (res) {
+                // Fade out the row
+                $btn.closest('tr').fadeOut(260, function () {
+                    $(this).remove();
+                    recalcSubtotal();
+
+                    // Update nav badge
+                    if (res.cartCount !== undefined) {
+                        var $counter = $('#cart-counter');
+                        $counter.text(res.cartCount);
+                        $counter.toggle(res.cartCount > 0);
+                    }
+
+                    // If cart is now empty, reload so the empty-state message shows
+                    if ($('tbody tr').length === 0) {
+                        location.reload();
+                    }
+                });
+            },
+            error: function () {
+                toastr.error('Could not remove item. Please try again.');
+            }
+        });
+    }
+
+})(jQuery);
+</script>
+@endpush
 
 @endsection

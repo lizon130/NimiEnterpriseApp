@@ -480,7 +480,7 @@ class FrontendController extends Controller
     public function searchProducts(Request $request){
         App::setLocale(Session::get('language'));
         $subcategory = null;
-        $products = Product::where('status', 1);
+        $products = Product::with('brand', 'category')->where('status', 1);
         if ($request->name) {
             $products->where(function ($query) use ($request) {
                 $query->where('name', 'like', "%" . $request->name . "%")
@@ -626,9 +626,9 @@ class FrontendController extends Controller
 
     public function product_details($id) {
         App::setLocale(Session::get('language'));
-        $product = Product::where('slug', $id)->first();
+        $product = Product::with('brand', 'category')->where('slug', $id)->first();
         if (!$product) {
-            $product = Product::find($id);
+            $product = Product::with('brand', 'category')->find($id);
         }
         if (!$product) {
             return response()->view('errors.404', [], 404);
@@ -646,8 +646,8 @@ class FrontendController extends Controller
 		$catalogue =  Catalogue::where('product_id', $product->id)->where('type', 'catalogue')->first();
 
 		$custom_fields =  CustomField::where('status', 1)->get();
-        return view('frontend.pages.new-product-details',compact('product', 'releted_products','catalogue','custom_fields'));
-        // return view('frontend.pages.product_details',compact('product', 'releted_parts','catalogue'));
+        $releted_parts = $releted_products; // alias for product_details view
+        return view('frontend.pages.product_details',compact('product', 'releted_parts','catalogue','custom_fields'));
     }
 
     public function allParts(){
@@ -822,42 +822,74 @@ class FrontendController extends Controller
             }
         }
 
+        if ($request->ajax() || $request->wantsJson()) {
+            $cartlist = $request->session()->get('cartlist', []);
+            return response()->json([
+                'status'    => 'success',
+                'message'   => 'Product removed from cart!',
+                'cartCount' => count($cartlist),
+            ]);
+        }
+
         return redirect()->route('cart')->with('message', 'Product remove from cart!');
     }
 
     public function incrementCart($product_id, Request $request){
         $productId = $product_id;
+        $newQty    = 1;
+
         if ($request->session()->has('cartlist')) {
             $cartlist = $request->session()->get('cartlist');
 
             if (isset($cartlist[$productId])) {
                 $cartlist[$productId]['quantity']++;
+                $newQty = $cartlist[$productId]['quantity'];
                 $request->session()->put('cartlist', $cartlist);
-                return redirect()->route('cart')->with('message', 'Cart quantity increment!');
             }
         }
-        return redirect()->route('cart')->with('message', 'Cart updated!');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status'    => 'success',
+                'quantity'  => $newQty,
+                'cartCount' => count($request->session()->get('cartlist', [])),
+            ]);
+        }
+
+        return redirect()->route('cart')->with('message', 'Cart quantity increment!');
     }
 
     public function decrementCart($product_id, Request $request){
         $productId = $product_id;
+        $newQty    = 0;
+        $removed   = false;
+
         if ($request->session()->has('cartlist')) {
             $cartlist = $request->session()->get('cartlist');
 
             if (isset($cartlist[$productId])) {
                 if ($cartlist[$productId]['quantity'] > 1) {
                     $cartlist[$productId]['quantity']--;
+                    $newQty = $cartlist[$productId]['quantity'];
                     $request->session()->put('cartlist', $cartlist);
-                    return redirect()->route('cart')->with('message', 'Cart quantity decrement!');
                 } else {
-                    // If the quantity is already 1, you can consider removing the item from the cart
                     unset($cartlist[$productId]);
                     $request->session()->put('cartlist', $cartlist);
-                    return redirect()->route('cart')->with('message', 'Product removed from cart!');
+                    $removed = true;
                 }
             }
         }
-        return redirect()->route('cart')->with('message', 'Cart updated!');
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status'    => 'success',
+                'quantity'  => $newQty,
+                'removed'   => $removed,
+                'cartCount' => count($request->session()->get('cartlist', [])),
+            ]);
+        }
+
+        return redirect()->route('cart')->with('message', $removed ? 'Product removed from cart!' : 'Cart quantity decrement!');
     }
 
     public function cart(Request $request) {
