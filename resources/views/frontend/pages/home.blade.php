@@ -1021,7 +1021,7 @@ img { max-width: 100%; display: block; }
                         @endif
                         @if (!empty($banner->button_text))
                             <div class="hero-cta-group">
-                                <a href="{{ $banner->link ?: route('products') }}"
+                                <a href="{{ route('products') }}"
                                     class="hero-btn hero-btn-primary"
                                     style="background: {{ $banner->button_color ?? '' }};">
                                     <i class="fa-solid fa-arrow-right"></i>
