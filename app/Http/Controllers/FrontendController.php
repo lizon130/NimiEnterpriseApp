@@ -143,38 +143,6 @@ class FrontendController extends Controller
         return 'success';
     }
 
-    public function home()
-    {
-
-        if (!Auth::check()) {
-            return redirect()->route('login');
-        }
-
-        App::setLocale(Session::get('language'));
-
-        $categories = Category::where('show_home', 1)
-            ->where('status', 1)
-            ->orderBy('short_number', 'asc')
-            ->get();
-
-        $services = Service::where('status', 1)->take(6)->get();
-
-        $newses =  News::where('status', 1)->take(6)->get();
-
-        $banners = Resource::where('status', 1)->where('type', 'banner')->orderBy('short_number', 'asc')->get();
-
-        $partners = Brand::where('status', 1)->where('show_home', 1)->get();
-
-        $products = Product::with('category')
-            ->where('status', 1)
-            ->where('features', 1)
-            ->orderBy('short_number', 'asc')
-            ->get();
-
-        return view('frontend.pages.home', compact('categories', 'services', 'newses', 'products', 'banners', 'partners'));
-    }
-
-
     public function registration()
     {
         App::setLocale(Session::get('language'));
@@ -769,31 +737,22 @@ class FrontendController extends Controller
     public function AddToCart($type, $id, Request $request)
     {
         $productId = $id;
-        $quantity = 1;
+        $quantity  = (int) $request->input('quantity', 1);
+        if ($quantity < 1) $quantity = 1;
+        if ($quantity > 99) $quantity = 99;
         $isAjax = $request->ajax() || $request->wantsJson();
 
-        if ($request->session()->has('cartlist')) {
-            $cartlist = $request->session()->get('cartlist');
+        $cartlist = $request->session()->get('cartlist', []);
 
-            if (isset($cartlist[$productId])) {
-                if ($isAjax) {
-                    return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
-                }
-                return redirect()->route('cart')->with('error', 'Product is already in your cart!');
-            }
-
-            $cartlist[$productId] = [
-                'quantity' => $quantity,
-                'type' => $type
-            ];
-        } else {
-            $cartlist = [
-                $productId => [
-                    'quantity' => $quantity,
-                    'type' => $type
-                ]
-            ];
+        if (isset($cartlist[$productId]) && !$isAjax) {
+            return redirect()->route('cart')->with('error', 'Product is already in your cart!');
         }
+
+        // New product OR AJAX re-add: add / update with the chosen quantity
+        $cartlist[$productId] = [
+            'quantity' => $quantity,
+            'type' => $type
+        ];
 
         $request->session()->put('cartlist', $cartlist);
 

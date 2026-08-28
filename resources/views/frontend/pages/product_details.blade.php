@@ -1419,4 +1419,471 @@ $(function () {
 </script>
 @endpush
 
+<!-- Quantity Selector Bottom Sheet Modal -->
+<div id="quantityModal" class="quantity-bottom-sheet">
+    <div class="qs-backdrop" onclick="closeQuantityModal()"></div>
+    <div class="qs-content">
+        <div class="qs-handle"></div>
+        
+        <div class="qs-header">
+            <h4 class="qs-title">Select Quantity</h4>
+            <button type="button" class="qs-close" onclick="closeQuantityModal()">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="qs-product-info">
+            <div class="qs-product-image">
+                <img id="qsProductImage" src="" alt="Product">
+            </div>
+            <div class="qs-product-details">
+                <h5 id="qsProductName">Product Name</h5>
+                <p id="qsProductPrice" class="qs-price">$0.00</p>
+            </div>
+        </div>
+        
+        <div class="qs-quantity-wrapper">
+            <button type="button" class="qs-btn-qty" onclick="updateQuantity(-1)">
+                <i class="fa-solid fa-minus"></i>
+            </button>
+            <div class="qs-quantity-display">
+                <span id="qsQuantity">1</span>
+            </div>
+            <button type="button" class="qs-btn-qty" onclick="updateQuantity(1)">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+        
+        <div class="qs-footer">
+            <button type="button" class="qs-btn-cancel" onclick="closeQuantityModal()">Cancel</button>
+            <button type="button" class="qs-btn-add" onclick="confirmAddToCart()">
+                <i class="fa-solid fa-cart-shopping"></i>
+                Add to Cart
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* ============================================================
+       Quantity Bottom Sheet Modal Styles
+    ============================================================ */
+    .quantity-bottom-sheet {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        animation: qsFadeIn 0.2s ease;
+    }
+    
+    .quantity-bottom-sheet.active {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+    
+    @keyframes qsFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .qs-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        animation: qsBackdropFadeIn 0.2s ease;
+    }
+    
+    @keyframes qsBackdropFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .qs-content {
+        position: relative;
+        background: white;
+        width: 100%;
+        max-width: 500px;
+        border-radius: 24px 24px 0 0;
+        padding: 20px;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+        animation: qsSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    @keyframes qsSlideUp {
+        from { 
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        to { 
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .qs-handle {
+        width: 40px;
+        height: 4px;
+        background: #e0e0e0;
+        border-radius: 2px;
+        margin: 0 auto 16px;
+    }
+    
+    .qs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .qs-title {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    
+    .qs-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+    }
+    
+    .qs-close:hover {
+        background: #f3f4f6;
+        color: #1f2937;
+    }
+    
+    .qs-product-info {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 12px;
+    }
+    
+    .qs-product-image {
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        overflow: hidden;
+        background: white;
+        border: 1px solid #e5e7eb;
+        flex-shrink: 0;
+    }
+    
+    .qs-product-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .qs-product-details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    .qs-product-details h5 {
+        margin: 0 0 8px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .qs-price {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #f85606;
+    }
+    
+    .qs-quantity-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 16px;
+        background: #f9fafb;
+        border-radius: 12px;
+    }
+    
+    .qs-btn-qty {
+        width: 48px;
+        height: 48px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        border-radius: 12px;
+        font-size: 16px;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .qs-btn-qty:hover {
+        border-color: #f85606;
+        color: #f85606;
+        background: #fff7ed;
+    }
+    
+    .qs-btn-qty:active {
+        transform: scale(0.95);
+    }
+    
+    .qs-quantity-display {
+        width: 80px;
+        text-align: center;
+    }
+    
+    .qs-quantity-display span {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .qs-footer {
+        display: flex;
+        gap: 12px;
+    }
+    
+    .qs-btn-cancel {
+        flex: 1;
+        padding: 14px 20px;
+        background: #f3f4f6;
+        color: #374151;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .qs-btn-cancel:hover {
+        background: #e5e7eb;
+    }
+    
+    .qs-btn-add {
+        flex: 2;
+        padding: 14px 20px;
+        background: linear-gradient(135deg, #f85606, #ff8a00);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    
+    .qs-btn-add:hover {
+        background: linear-gradient(135deg, #d94a04, #f85606);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(248, 86, 6, 0.3);
+    }
+    
+    .qs-btn-add:active {
+        transform: translateY(0);
+    }
+    
+    .qs-btn-add i {
+        font-size: 18px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 576px) {
+        .qs-content {
+            padding: 16px;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .qs-title {
+            font-size: 16px;
+        }
+        
+        .qs-product-image {
+            width: 60px;
+            height: 60px;
+        }
+        
+        .qs-product-details h5 {
+            font-size: 14px;
+        }
+        
+        .qs-price {
+            font-size: 16px;
+        }
+        
+        .qs-btn-qty {
+            width: 40px;
+            height: 40px;
+            font-size: 14px;
+        }
+        
+        .qs-quantity-display span {
+            font-size: 20px;
+        }
+        
+        .qs-footer {
+            flex-direction: column;
+        }
+        
+        .qs-btn-cancel,
+        .qs-btn-add {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+/* ============================================================
+   Quantity Bottom Sheet — GLOBAL scope (works with onclick="")
+============================================================ */
+var qsProduct   = null;   // { id, name, unitPrice, currency }
+var qsQty       = 1;
+
+function qsFormatNum(n) {
+    return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+function openQuantityModal(productId, productName, priceText, productImage) {
+    var currency = ((priceText || '').replace(/[0-9.,]/g, '').trim()) || '৳';
+    var unit     = parseFloat((priceText || '0').replace(/[^0-9.]/g, '')) || 0;
+
+    qsProduct = { id: productId, name: productName, unitPrice: unit, currency: currency };
+    qsQty     = 1;
+
+    document.getElementById('qsProductName').textContent = productName;
+    document.getElementById('qsQuantity').textContent   = qsQty;
+    document.getElementById('qsProductPrice').textContent = currency + qsFormatNum(unit) + ' x 1 = ' + currency + qsFormatNum(unit);
+
+    var img = document.getElementById('qsProductImage');
+    if (productImage) {
+        img.src = productImage;
+        img.parentElement.style.display = '';
+    } else {
+        img.parentElement.style.display = 'none';
+    }
+
+    document.getElementById('quantityModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeQuantityModal() {
+    document.getElementById('quantityModal').classList.remove('active');
+    document.body.style.overflow = '';
+    qsProduct = null;
+    qsQty = 1;
+}
+
+function updateQuantity(change) {
+    if (!qsProduct) return;
+    var next = qsQty + change;
+    if (next < 1 || next > 99) return;
+
+    qsQty = next;
+    document.getElementById('qsQuantity').textContent = qsQty;
+    document.getElementById('qsProductPrice').textContent =
+        qsProduct.currency + qsFormatNum(qsProduct.unitPrice) + ' x ' + qsQty +
+        ' = ' + qsProduct.currency + qsFormatNum(qsProduct.unitPrice * qsQty);
+}
+
+function confirmAddToCart() {
+    if (!qsProduct) return;
+
+    var $btn = $('.qs-btn-add').prop('disabled', true);
+
+    $.post('/add-to-cart/product/' + qsProduct.id, {
+        _token:   $('meta[name="csrf-token"]').attr('content'),
+        quantity: qsQty
+    }).done(function (res) {
+        if (res.status === 'success') {
+            if (typeof res.cartCount !== 'undefined') {
+                $('.cart-count, .cart_count, #cartCount').text(res.cartCount);
+            }
+            showNotification(res.message || 'Product added to cart!', 'success');
+        } else {
+            showNotification(res.message || 'Could not add product.', 'error');
+        }
+        closeQuantityModal();
+    }).fail(function () {
+        showNotification('Something went wrong. Please try again.', 'error');
+    }).always(function () {
+        $btn.prop('disabled', false);
+    });
+}
+
+function showNotification(message, type) {
+    var $n = $('<div class="cart-notification"></div>').css({
+        position: 'fixed', top: '20px', right: '20px', zIndex: 10000,
+        display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '16px 20px', borderRadius: '12px', color: '#fff',
+        background: type === 'success' ? '#10b981' : '#ef4444',
+        boxShadow: '0 4px 12px rgba(0,0,0,.15)',
+        fontSize: '14px', fontWeight: '500'
+    }).html('<i class="fa-solid ' + (type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation') + '"></i><span></span>');
+
+    $n.find('span').text(message);
+    $n.css({ transform: 'translateX(120%)', transition: 'transform .3s ease' });
+    $('body').append($n);
+    requestAnimationFrame(function () { $n.css('transform', 'translateX(0)'); });
+
+    setTimeout(function () {
+        $n.css('transform', 'translateX(120%)');
+        setTimeout(function () { $n.remove(); }, 300);
+    }, 2500);
+}
+
+/* Close with ESC */
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeQuantityModal();
+});
+
+/* Product info comes straight from Blade (both desktop + sticky mobile CTA) */
+$(document).on('click', '.add-to-cart', function (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation(); // stop footer's global add-to-cart AJAX
+    e.stopPropagation();
+
+    var href = $(this).attr('href') || '';
+    var productId = href.split('/').pop();
+    if (!productId) return;
+
+    openQuantityModal(
+        productId,
+        @json($product->name ?? 'Product'),
+        '৳' + @json(number_format((float)($product->price ?? 0), 0)),
+        @json($product->thumbnail ? asset('uploads/product-images/' . $product->thumbnail) : '')
+    );
+});
+</script>
+
 @endsection

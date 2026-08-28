@@ -121,7 +121,7 @@ Route::get('/clear-cash', function () {
 });
 
 Route::controller(FrontendController::class)->group(function () {
-    Route::get('/', 'home')->name('home');
+    Route::get('/', 'allProducts')->name('home');
     Route::get('/bot', 'bot')->name('bot');
     Route::get('data', 'data');
     Route::get('login', 'login')->name('login');
@@ -161,7 +161,7 @@ Route::controller(FrontendController::class)->group(function () {
     Route::post('search-news', 'searchNews')->name('search.news');
 
     // cart
-    Route::get('add-to-cart/{type}/{id}', 'AddToCart')->name('add.to.cart');
+    Route::match(['get', 'post'], 'add-to-cart/{type}/{id}', 'AddToCart')->name('add.to.cart');
     Route::get('remove-cart/{id}', 'removeFromCart')->name('remove.from.cart');
     Route::get('increment-cart/{id}', 'incrementCart')->name('increment.from.cart');
     Route::get('decrement-cart/{id}', 'decrementCart')->name('decrement.from.cart');

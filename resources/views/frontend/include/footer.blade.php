@@ -205,6 +205,12 @@
             $(document).on('click', '.add-to-cart', function(event) {
                 event.preventDefault();
 
+                // Pages with the quantity bottom-sheet modal handle add-to-cart
+                // themselves (quantity is chosen in the modal first)
+                if (document.getElementById('quantityModal')) {
+                    return;
+                }
+
                 var link = $(this);
 
                 $.ajax({
