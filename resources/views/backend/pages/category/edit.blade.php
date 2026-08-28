@@ -62,6 +62,16 @@
             </div>
         </div>
 
+        <div class="form-group row">
+            <label for="" class="col-sm-3 col-form-label">Loose Product Category</label>
+            <div class="col-sm-9 d-flex align-items-center">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" @if($single_category->is_loose == 1) checked @endif type="checkbox" name="is_loose" id="isLooseSwitchEdit">
+                </div>
+                <small class="text-muted ms-2">Loose products get their own section on the shop page (outside the regular filters).</small>
+            </div>
+        </div>
+
         <div class="form-group  row">
             <label for="" class="col-sm-3 col-form-label">Image</label>
             <div class="col-sm-9">

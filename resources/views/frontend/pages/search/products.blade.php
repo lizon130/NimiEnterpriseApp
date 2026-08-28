@@ -17,6 +17,20 @@
         gap: 14px;
     }
 
+    /* Smooth appearance for initial + lazily appended cards */
+    .products-grid > div {
+        animation: pcFadeIn .35s ease both;
+    }
+
+    @keyframes pcFadeIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .products-grid > div { animation: none; }
+    }
+
     /* === Card === */
     .pc-wrap {
         text-decoration: none;

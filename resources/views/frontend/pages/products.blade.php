@@ -547,40 +547,147 @@
     }
 
     /* ============================================================
-       Pagination
+       Mode switcher (All Products / Loose Products)
     ============================================================ */
-    .pagination-wrap {
-        padding-top: 24px;
-        padding-bottom: 8px;
+    .mode-switch-wrap {
+        margin-top: 20px;
+        display: flex;
+        justify-content: center;
     }
 
-    #product_pagination {
-        gap: 5px;
-        flex-wrap: wrap;
-    }
-
-    #product_pagination .page-link {
-        border-radius: 10px !important;
+    .mode-switch {
+        display: inline-flex;
+        background: var(--card);
         border: 1.5px solid var(--border);
-        color: var(--dark);
+        border-radius: 999px;
+        padding: 5px;
+        gap: 4px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .mode-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: none;
+        background: transparent;
+        border-radius: 999px;
+        padding: 10px 22px;
+        font-size: 14px;
         font-weight: 700;
-        min-width: 40px;
-        text-align: center;
+        color: var(--muted);
+        cursor: pointer;
         transition: all var(--transition);
-        font-size: 13px;
+        white-space: nowrap;
     }
 
-    #product_pagination .active .page-link {
-        background: var(--pr);
+    .mode-btn i { font-size: 13px; }
+
+    .mode-btn:hover { color: var(--pr); }
+
+    .mode-btn.active {
+        background: var(--pr-grd);
         color: #fff;
-        border-color: var(--pr);
-        box-shadow: 0 4px 12px rgba(248,86,6,.3);
+        box-shadow: 0 4px 14px rgba(248,86,6,.35);
     }
 
-    #product_pagination .page-link:hover:not(.disabled) {
-        background: var(--pr-lt);
-        color: var(--pr);
-        border-color: var(--pr);
+    /* ============================================================
+       Loose category chips (outside the filter)
+    ============================================================ */
+    .loose-chips {
+        display: none;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 4px 2px 10px;
+        margin-bottom: 10px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .loose-chips::-webkit-scrollbar { display: none; }
+
+    #products-page.loose-mode .loose-chips { display: flex; }
+
+    .loose-chip {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--card);
+        border: 1.5px solid var(--border);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all var(--transition);
+        white-space: nowrap;
+    }
+
+    .loose-chip i { font-size: 11px; color: var(--muted); transition: color var(--transition); }
+
+    .loose-chip:hover { border-color: var(--pr); color: var(--pr); }
+    .loose-chip:hover i { color: var(--pr); }
+
+    .loose-chip.active {
+        background: var(--pr-grd);
+        border-color: transparent;
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(248,86,6,.35);
+    }
+
+    .loose-chip.active i { color: #fff; }
+
+    /* Hide the regular filter UI while in loose mode */
+    #products-page.loose-mode .desktop-sidebar,
+    #products-page.loose-mode .mobile-filter-bar { display: none !important; }
+
+    #products-page.loose-mode .products-layout { grid-template-columns: 1fr; }
+
+    /* ============================================================
+       Infinite scroll loader
+    ============================================================ */
+    .infinite-status {
+        padding: 28px 0 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .infinite-spinner {
+        width: 34px;
+        height: 34px;
+        border: 3px solid var(--pr-lt);
+        border-top-color: var(--pr);
+        border-radius: 50%;
+        animation: infSpin .7s linear infinite;
+    }
+
+    @keyframes infSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .infinite-end {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        padding: 26px 0 6px;
+    }
+
+    .infinite-end::before,
+    .infinite-end::after {
+        content: '';
+        height: 1px;
+        background: var(--border);
+        flex: 1;
     }
 
     /* ============================================================
@@ -900,6 +1007,22 @@
     {{-- ---- Active filter chips (mobile) ---- --}}
     <div class="active-chips container" id="activeChips"></div>
 
+    {{-- ---- Mode switcher: All Products / Loose Products ---- --}}
+    <div class="mode-switch-wrap">
+        <div class="mode-switch" role="tablist" aria-label="Product mode">
+            <button type="button" class="mode-btn active" id="modeAllBtn" role="tab" aria-selected="true">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <span>{{ trans('language.all_products') }}</span>
+            </button>
+            @if ($loose_categories->count() > 0)
+                <button type="button" class="mode-btn" id="modeLooseBtn" role="tab" aria-selected="false">
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <span>{{ trans('language.loose_products') }}</span>
+                </button>
+            @endif
+        </div>
+    </div>
+
     {{-- ---- Main layout ---- --}}
     <div class="container">
         <div class="products-layout">
@@ -1011,6 +1134,20 @@
             {{-- ======== Listing column ======== --}}
             <div class="listing-col">
 
+                {{-- Loose category chips (outside the filter — only in loose mode) --}}
+                @if ($loose_categories->count() > 0)
+                    <div class="loose-chips" id="looseChips">
+                        <button type="button" class="loose-chip active" data-cat="">
+                            <i class="fa-solid fa-layer-group"></i> {{ trans('language.all_loose') ?? 'All Loose' }}
+                        </button>
+                        @foreach ($loose_categories as $looseCat)
+                            <button type="button" class="loose-chip" data-cat="{{ $looseCat->id }}">
+                                <i class="fa-solid fa-tag"></i> {{ $looseCat->title }}
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+
                 {{-- Search bar --}}
                 <form id="productSearchForm" action="">
                     <div class="search-bar-wrap">
@@ -1063,11 +1200,14 @@
                     </div>
                 </div>
 
-                {{-- Pagination --}}
-                <div class="pagination-wrap">
-                    <nav aria-label="Products pagination">
-                        <ul class="pagination justify-content-center" id="product_pagination"></ul>
-                    </nav>
+                {{-- Infinite scroll --}}
+                <div class="infinite-status" id="infiniteStatus" style="display:none;">
+                    <div class="infinite-spinner"></div>
+                    <span>{{ trans('language.loading_more') }}</span>
+                </div>
+                <div id="infiniteSentinel" style="height:1px;"></div>
+                <div class="infinite-end" id="infiniteEnd" style="display:none;">
+                    {{ trans('language.end_of_list') }}
                 </div>
 
             </div>{{-- /listing-col --}}
@@ -1193,9 +1333,20 @@
     let current_category = "{{ optional($current_category)->id ?? '' }}";
     let isListView        = false;
 
+    // Infinite scroll + mode state
+    const listState = {
+        mode:        'all',      // 'all' | 'loose'
+        looseCat:    '',         // selected loose category id ('' = all loose)
+        page:        1,
+        lastPage:    1,
+        total:       0,
+        loading:     false
+    };
+
     const SEARCH_URL  = "{{ route('search.products') }}";
     const SUGGEST_URL = "{{ route('product.suggest') }}";
     const NO_RESULT   = "{{ trans('language.no_product_found') }}";
+    const STATE_KEY   = 'nimi_products_state';
 
     /* ============================================================
        Helpers
@@ -1262,7 +1413,7 @@
         $('.' + cls + '[value="' + val.replace(/"/g, '\\"') + '"]').prop('checked', false);
         current_category = '';
         updateFilterUI();
-        getProducts(null, false);
+        reloadListing();
     });
 
     $(document).on('click', '#clearAllChips', function () {
@@ -1277,7 +1428,7 @@
         $('#productNameInput').val('').trigger('input');
         current_category = '';
         updateFilterUI();
-        getProducts(null, false);
+        reloadListing();
     }
 
     $('#desktopResetBtn').on('click', function (e) { e.preventDefault(); resetFilters(); });
@@ -1303,7 +1454,7 @@
         current_category = '';
         updateFilterUI();
         closeDrawer();
-        getProducts(null, false);
+        reloadListing();
     });
 
     // Swipe down to close drawer
@@ -1368,72 +1519,260 @@
         const fd = new FormData();
 
         fd.set('name', $('#productNameInput').val().trim());
+        fd.set('loose', listState.mode === 'loose' ? 1 : 0);
 
-        $('.brands_for_filter:checked').each(function () {
-            fd.append('brands_for_filter[]', $(this).val());
-        });
+        // In loose mode the category comes from the loose chip (outside the filter)
+        if (listState.mode === 'loose') {
+            if (listState.looseCat) fd.append('category_for_filter[]', listState.looseCat);
+        } else {
+            $('.brands_for_filter:checked').each(function () {
+                fd.append('brands_for_filter[]', $(this).val());
+            });
 
-        $('.category_for_filter:checked').each(function () {
-            fd.append('category_for_filter[]', $(this).val());
-        });
+            $('.category_for_filter:checked').each(function () {
+                fd.append('category_for_filter[]', $(this).val());
+            });
 
-        $('.attributes_for_filter:checked').each(function () {
-            fd.append('attributes_for_filter[]', $(this).val());
-        });
+            $('.attributes_for_filter:checked').each(function () {
+                fd.append('attributes_for_filter[]', $(this).val());
+            });
+        }
 
         fd.append('current_category', current_category);
         return fd;
     }
 
     /* ============================================================
-       Fetch products
+       Infinite scroll fetch engine
+       fetchPage(page, { append }) — appends or replaces the grid
     ============================================================ */
-    function getProducts(url, showLoader) {
-        const useFullLoader = (showLoader !== false);
+    function fetchPage(page, append) {
+        if (listState.loading) return Promise.resolve();
+        if (append && page > listState.lastPage) return Promise.resolve();
 
-        if (useFullLoader) {
-            $('body').addClass('loader-open');
-        } else {
+        listState.loading = true;
+
+        if (!append) {
             $('#productListing').addClass('listing-loading');
+        } else {
+            $('#infiniteStatus').show();
+            $('#infiniteEnd').hide();
         }
 
-        $.ajax({
+        const fd = buildFormData();
+        fd.set('page', page);
+
+        return $.ajax({
             headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            url:         url || SEARCH_URL,
+            url:         SEARCH_URL,
             type:        'POST',
-            data:        buildFormData(),
+            data:        fd,
             processData: false,
             contentType: false,
-            dataType:    'json',
-            success: function (response) {
-                $('body').removeClass('loader-open');
-                $('#skeletonLoader').remove();
+            dataType:    'json'
+        }).then(function (response) {
+            listState.page     = response.current_page || page;
+            listState.lastPage = response.last_page || 1;
+            listState.total    = response.total || 0;
 
-                // Update listing + pagination
+            $('#skeletonLoader').remove();
+            $('#infiniteStatus').hide();
+
+            if (append) {
+                // Extract only the product items so <style>/<script> aren't re-injected
+                const items = $($.parseHTML(response.products_html)).find('[role="listitem"]');
+                const $grid = $('#productListing .products-grid');
+                if ($grid.length) $grid.append(items);
+                else $('#productListing').removeClass('listing-loading').html(response.products_html);
+
+                if (isListView) applyViewMode();
+            } else {
                 $('#productListing')
                     .removeClass('listing-loading')
                     .html(response.products_html);
-                $('#product_pagination').html(response.pagination_html);
 
-                // Re-apply view mode
                 if (isListView) applyViewMode();
+            }
 
-                // Update hero subtitle with count
-                const total = response.total ?? null;
-                if (total !== null) {
-                    $('#heroSubtitle').text(total + ' product' + (total !== 1 ? 's' : '') + ' found');
-                }
-            },
-            error: function () {
-                $('body').removeClass('loader-open');
-                $('#skeletonLoader').remove();
-                $('#productListing').removeClass('listing-loading');
+            // Counts
+            const shown = $('#productListing [role="listitem"]').length;
+            $('#listingCount').html(
+                listState.total > 0
+                    ? 'Showing <strong>' + shown + '</strong> of <strong>' + listState.total + '</strong> products'
+                    : '&nbsp;'
+            );
+            $('#heroSubtitle').text(listState.total + ' product' + (listState.total !== 1 ? 's' : '') + ' found');
+
+            // End-of-list marker
+            $('#infiniteEnd').toggle(!response.has_more_pages);
+
+            listState.loading = false;
+            maybeLoadMore();
+        }).catch(function () {
+            listState.loading = false;
+            $('#infiniteStatus').hide();
+            $('#productListing').removeClass('listing-loading');
+        });
+    }
+
+    function reloadListing() {
+        return fetchPage(1, false);
+    }
+
+    /* ============================================================
+       Infinite scroll observer
+    ============================================================ */
+    const sentinelObserver = 'IntersectionObserver' in window
+        ? new IntersectionObserver(function (entries) {
+            if (entries.some(e => e.isIntersecting)) maybeLoadMore();
+        }, { rootMargin: '600px 0px' })
+        : null;
+
+    function maybeLoadMore() {
+        if (!sentinelObserver) {
+            // Fallback: classic scroll listener
+            return;
+        }
+        if (listState.loading) return;
+        if (listState.page >= listState.lastPage) return;
+        if ($('#infiniteEnd').is(':visible')) return;
+        fetchPage(listState.page + 1, true);
+    }
+
+    if (sentinelObserver) {
+        sentinelObserver.observe(document.getElementById('infiniteSentinel'));
+    } else {
+        $(window).on('scroll', function () {
+            if ($(window).scrollTop() + $(window).height() > $(document).height() - 700) {
+                maybeLoadMore();
             }
         });
     }
 
-    // Initial load
-    getProducts(null);
+    /* ============================================================
+       Mode switching (All / Loose) + loose chips
+    ============================================================ */
+    function applyMode(mode) {
+        if (mode !== 'all' && !$('#modeLooseBtn').length) mode = 'all';
+        if (listState.mode === mode) return;
+
+        listState.mode     = mode;
+        listState.looseCat = '';
+
+        $('#products-page').toggleClass('loose-mode', mode === 'loose');
+        $('#modeAllBtn').toggleClass('active', mode === 'all').attr('aria-selected', mode === 'all');
+        $('#modeLooseBtn').toggleClass('active', mode === 'loose').attr('aria-selected', mode === 'loose');
+
+        $('#looseChips .loose-chip').removeClass('active').first().addClass('active');
+
+        if (mode === 'loose') {
+            // Reset the regular filter so hidden checkboxes don't leak into the query
+            $('.category_for_filter, .brands_for_filter, .attributes_for_filter').prop('checked', false);
+            $('#productNameInput').val('');
+            $('#searchClearBtn').hide();
+            updateFilterUI();
+        }
+
+        reloadListing();
+    }
+
+    $('#modeAllBtn').on('click', function () { applyMode('all'); });
+    $('#modeLooseBtn').on('click', function () { applyMode('loose'); });
+
+    $(document).on('click', '.loose-chip', function () {
+        if ($(this).hasClass('active')) return;
+        $('#looseChips .loose-chip').removeClass('active');
+        $(this).addClass('active');
+        listState.looseCat = $(this).data('cat') || '';
+        reloadListing();
+    });
+
+    /* ============================================================
+       Scroll position + state restore on back navigation
+    ============================================================ */
+    function saveRestoreState() {
+        try {
+            sessionStorage.setItem(STATE_KEY, JSON.stringify({
+                mode:     listState.mode,
+                looseCat: listState.looseCat,
+                page:     listState.page,
+                scrollY:  window.scrollY,
+                search:   $('#productNameInput').val(),
+                brands:   $('.brands_for_filter:checked').map(function () { return this.value; }).get(),
+                cats:     $('.category_for_filter:checked').map(function () { return this.value; }).get(),
+                attrs:    $('.attributes_for_filter:checked').map(function () { return this.value; }).get()
+            }));
+        } catch (e) { /* storage unavailable */ }
+    }
+
+    function readRestoreState() {
+        try {
+            const raw = sessionStorage.getItem(STATE_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+    }
+
+    // Save state whenever we leave the page (works with bfcache too)
+    $(window).on('pagehide', saveRestoreState);
+
+    // bfcache: DOM is intact — just jump back to the old position
+    $(window).on('pageshow', function (e) {
+        if (!e.originalEvent.persisted) return;
+        const saved = readRestoreState();
+        if (saved && typeof saved.scrollY === 'number') {
+            window.scrollTo(0, saved.scrollY);
+        }
+    });
+
+    // Fresh load: rebuild the previous state (filters + pages), then restore scroll
+    function restoreFromState(saved) {
+        if (!saved) { reloadListing(); return; }
+
+        // Mode + chips
+        if (saved.mode === 'loose' && $('#modeLooseBtn').length) {
+            listState.mode = 'loose';
+            $('#products-page').addClass('loose-mode');
+            $('#modeAllBtn').removeClass('active').attr('aria-selected', 'false');
+            $('#modeLooseBtn').addClass('active').attr('aria-selected', 'true');
+
+            if (saved.looseCat) {
+                const $chip = $('#looseChips .loose-chip[data-cat="' + saved.looseCat + '"]');
+                if ($chip.length) {
+                    $('#looseChips .loose-chip').removeClass('active');
+                    $chip.addClass('active');
+                    listState.looseCat = saved.looseCat;
+                }
+            }
+        }
+
+        // Filters (only meaningful in "all" mode)
+        if (saved.mode !== 'loose') {
+            (saved.brands || []).forEach(v => $('.brands_for_filter[value="' + v + '"]').prop('checked', true));
+            (saved.cats || []).forEach(v => $('.category_for_filter[value="' + v + '"]').prop('checked', true));
+            (saved.attrs || []).forEach(v => $('.attributes_for_filter[value="' + v + '"]').prop('checked', true));
+        }
+        if (saved.search) {
+            $('#productNameInput').val(saved.search);
+            $('#searchClearBtn').show();
+        }
+
+        updateFilterUI();
+
+        // Load pages 1..N sequentially so the user lands on the same spot
+        const targetPage = Math.max(1, saved.page || 1);
+        let chain = fetchPage(1, false);
+        for (let p = 2; p <= targetPage; p++) {
+            chain = chain.then(function () {
+                if (listState.page >= listState.lastPage) return Promise.resolve();
+                return fetchPage(listState.page + 1, true);
+            });
+        }
+        chain.then(function () {
+            if (typeof saved.scrollY === 'number') {
+                window.scrollTo(0, saved.scrollY);
+            }
+        });
+    }
 
     /* ============================================================
        Live suggestions
@@ -1510,7 +1849,7 @@
         $('#productSuggestBox').addClass('d-none');
         current_category = '';
         clearTimeout(liveTimer);
-        liveTimer = setTimeout(function () { getProducts(null, false); }, 200);
+        liveTimer = setTimeout(function () { reloadListing(); }, 200);
     });
 
     $('#productNameInput').on('input', function () {
@@ -1522,7 +1861,7 @@
             $('#productSuggestBox').addClass('d-none').empty();
             suggestItems   = [];
             current_category = '';
-            liveTimer = setTimeout(function () { getProducts(null, false); }, 300);
+            liveTimer = setTimeout(function () { reloadListing(); }, 300);
             return;
         }
 
@@ -1532,7 +1871,7 @@
         }, suggestCache[q] ? 0 : 180);
 
         current_category = '';
-        liveTimer = setTimeout(function () { getProducts(null, false); }, 480);
+        liveTimer = setTimeout(function () { reloadListing(); }, 480);
     });
 
     $('#productNameInput').on('focus', function () {
@@ -1578,32 +1917,37 @@
         e.preventDefault();
         $('#productSuggestBox').addClass('d-none');
         current_category = '';
-        getProducts(null);
+        reloadListing();
     });
 
     /* ============================================================
        Filter change listeners
     ============================================================ */
     $(document).on('change', '.brands_for_filter, .category_for_filter, .attributes_for_filter', function () {
+        if (listState.mode === 'loose') return; // filter is hidden in loose mode
         current_category = '';
         updateFilterUI();
-        getProducts(null, false);
-    });
-
-    /* ============================================================
-       Pagination
-    ============================================================ */
-    $(document).on('click', '.pagination_btn', function (e) {
-        e.preventDefault();
-        const url = $(this).attr('href');
-        if (url && url !== '#') getProducts(url);
-        $('html, body').animate({ scrollTop: $('#products-page').offset().top - 80 }, 300);
+        reloadListing();
     });
 
     /* ============================================================
        Init
     ============================================================ */
     updateFilterUI();
+
+    // Initial load — only restore previous state on real back navigation,
+    // so arriving fresh (e.g. from the home menu) always starts at the top.
+    (function () {
+        let navType = '';
+        if (window.performance && performance.getEntriesByType) {
+            const entry = performance.getEntriesByType('navigation')[0];
+            navType = entry ? entry.type : '';
+        } else if (window.performance && performance.navigation) {
+            navType = performance.navigation.type === 2 ? 'back_forward' : '';
+        }
+
+        restoreFromState(navType === 'back_forward' ? readRestoreState() : null);
+    })();
 
 })(jQuery);
 </script>

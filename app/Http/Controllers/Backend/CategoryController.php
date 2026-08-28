@@ -70,6 +70,14 @@ class CategoryController extends Controller
             return ($row->is_parent == 1) ? '<span class="badge bg-gray text-dark w-70">Yes</span>' : '<span class="badge bg-gray text-dark w-70">No</span>';
         })
 
+        ->editColumn('title', function ($row) {
+            $title = e($row->title);
+            if ($row->is_loose == 1) {
+                $title .= ' <span class="badge bg-warning text-dark">Loose</span>';
+            }
+            return $title;
+        })
+
         ->editColumn('parent_category', function ($row) {
             return ($row->parent)->title ?? '-';
         })
@@ -92,7 +100,7 @@ class CategoryController extends Controller
             }
             return $btn;
         })
-        ->rawColumns(['image','is_parent','status','parent_category','action'])->make(true);
+        ->rawColumns(['image','is_parent','status','parent_category','title','action'])->make(true);
     }
 
     public function store(Request $request){
@@ -109,6 +117,7 @@ class CategoryController extends Controller
         $category->value  = $request->value;
         $category->status  = ($request->status) ? 1 : 0;
         $category->show_home  = ($request->show_home) ? 1 : 0;
+        $category->is_loose  = ($request->is_loose) ? 1 : 0;
 		$category->short_number = $request->short_number;
         if($request->hasFile('image')){
             $image = $request->file('image');
