@@ -140,16 +140,16 @@
                     </div>
                 </div>
                 <div class="col-md-6 m-auto order__form--submit">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="1" id="agree_check" required>
-                        <label class="form-check-label" for="agree_check">
-                            {{ trans('language.i_have_read_and_agree') }} <a
-                                href="{{ route('page', 'terms-and-conditions') }}">{{ trans('language.terms_condition') }}</a>,
-                            <a href="{{ route('page', 'privacy-policy') }}">{{ trans('language.privacy_policy') }}</a> and
-                            <a href="{{ route('page', 'return-policy') }}">{{ trans('language.return_policy') }}</a>
-                        </label>
-                        <small id="error_agree_check" class="d-none" style="color: red;">This field is required</small>
-                    </div>
+                    <!--<div class="form-check">-->
+                    <!--    <input class="form-check-input" type="checkbox" value="1" id="agree_check" required>-->
+                    <!--    <label class="form-check-label" for="agree_check">-->
+                    <!--        {{ trans('language.i_have_read_and_agree') }} <a-->
+                    <!--            href="{{ route('page', 'terms-and-conditions') }}">{{ trans('language.terms_condition') }}</a>,-->
+                    <!--        <a href="{{ route('page', 'privacy-policy') }}">{{ trans('language.privacy_policy') }}</a> and-->
+                    <!--        <a href="{{ route('page', 'return-policy') }}">{{ trans('language.return_policy') }}</a>-->
+                    <!--    </label>-->
+                    <!--    <small id="error_agree_check" class="d-none" style="color: red;">This field is required</small>-->
+                    <!--</div>-->
                     @if (Auth::user())
                         <button class="btn btn_confirm_purchase"
                             type="submit">{{ trans('language.btn_confirm_purchase') }}</button>
@@ -190,19 +190,19 @@
                 $(document).on('click', '.btn_confirm_purchase', function(e) {
                     e.preventDefault();
 
-                    if ($('#agree_check').prop('checked')) {
-                        $('#agree_check').removeClass('check-border-color');
-                        $('#error_agree_check').removeClass('d-block check-border-color').addClass('d-none');
-                    } else {
-                        $('#error_agree_check').removeClass('d-none').addClass('d-block check-border-color');
-                        $('#agree_check').addClass('check-border-color');
-                    }
-                    if (!validateForm()) {
-                        return;
-                    }
-                    if (!$('#agree_check').prop('checked')) {
-                        return;
-                    }
+                    // if ($('#agree_check').prop('checked')) {
+                    //     $('#agree_check').removeClass('check-border-color');
+                    //     $('#error_agree_check').removeClass('d-block check-border-color').addClass('d-none');
+                    // } else {
+                    //     $('#error_agree_check').removeClass('d-none').addClass('d-block check-border-color');
+                    //     $('#agree_check').addClass('check-border-color');
+                    // }
+                    // if (!validateForm()) {
+                    //     return;
+                    // }
+                    // if (!$('#agree_check').prop('checked')) {
+                    //     return;
+                    // }
 
                     let payment_method = $('input[name=payment_method]:checked').val();
 

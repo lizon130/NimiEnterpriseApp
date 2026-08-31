@@ -31,7 +31,7 @@
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 12mm 12mm 16mm;
+            padding: 9mm 11mm 22mm;
             background: #ffffff;
         }
 
@@ -41,12 +41,12 @@
             border-collapse: collapse;
             table-layout: fixed;
             border-bottom: 2px solid #1a1a2e;
-            padding-bottom: 6px;
+            padding-bottom: 4px;
         }
 
         .header-table td {
             vertical-align: middle;
-            padding-bottom: 8px;
+            padding-bottom: 4px;
         }
 
         .brand-cell {
@@ -63,35 +63,35 @@
         }
 
         .brand-table .logo-box img {
-            width: 52px;
+            width: 44px;
             height: auto;
             display: block;
         }
 
         .brand-table .logo-box .logo-fallback {
-            width: 52px;
-            height: 38px;
+            width: 44px;
+            height: 32px;
             background: #e9ecef;
             border: 1px dashed #ccc;
             text-align: center;
-            line-height: 38px;
+            line-height: 32px;
             font-size: 8px;
             color: #999;
         }
 
         .brand-table .name-box {
-            padding-left: 10px;
+            padding-left: 9px;
         }
 
         .company-name {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #1a1a2e;
-            line-height: 1.3;
+            line-height: 1.25;
         }
 
         .company-sub {
-            font-size: 9px;
+            font-size: 8.5px;
             color: #777;
             letter-spacing: 0.3px;
         }
@@ -102,10 +102,10 @@
         }
 
         .doc-title {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: bold;
             color: #1a1a2e;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             line-height: 1.1;
         }
 
@@ -114,7 +114,7 @@
             width: 100%;
             border-collapse: separate;
             border-spacing: 6px 0;
-            margin: 12px -6px 4px;
+            margin: 8px -6px 3px;
             table-layout: fixed;
         }
 
@@ -122,32 +122,32 @@
             background: #f8f9fa;
             border: 1px solid #e3e6ea;
             border-radius: 4px;
-            padding: 10px 12px;
+            padding: 6px 10px;
             vertical-align: top;
         }
 
         .info-box-title {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             color: #1a1a2e;
             border-bottom: 1px solid #d8dce2;
-            padding-bottom: 4px;
-            margin-bottom: 6px;
+            padding-bottom: 3px;
+            margin-bottom: 4px;
         }
 
         .info-line {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #444;
-            line-height: 1.7;
+            line-height: 1.5;
         }
 
         .info-label {
             font-weight: bold;
             color: #333;
             display: inline-block;
-            width: 68px;
+            width: 64px;
         }
 
         .meta-table {
@@ -156,8 +156,8 @@
         }
 
         .meta-table td {
-            font-size: 10px;
-            padding: 1px 0;
+            font-size: 9.5px;
+            padding: 0;
             color: #444;
         }
 
@@ -183,17 +183,17 @@
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
-            font-size: 10px;
+            margin-top: 8px;
+            font-size: 9px;
         }
 
         .items-table thead th {
             background: #1a1a2e;
             color: #ffffff;
-            padding: 7px 6px;
+            padding: 4px 5px;
             text-align: center;
             border: 1px solid #1a1a2e;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.4px;
@@ -208,11 +208,12 @@
         }
 
         .items-table tbody td {
-            padding: 6px;
+            padding: 3px 5px;
             text-align: center;
             border: 1px solid #dfe3e8;
             vertical-align: middle;
-            font-size: 10px;
+            font-size: 9px;
+            line-height: 1.3;
         }
 
         .items-table tbody td.tl {
@@ -229,12 +230,12 @@
 
         .part-name {
             color: #888;
-            font-size: 9px;
+            font-size: 8.5px;
         }
 
         .empty-row td {
             text-align: center;
-            padding: 18px 6px;
+            padding: 12px 5px;
             color: #999;
             font-style: italic;
         }
@@ -242,20 +243,20 @@
         /* ===== Totals ===== */
         .totals-wrap {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 8px;
         }
 
         .totals-left {
-            font-size: 9px;
+            font-size: 8.5px;
             color: #777;
             vertical-align: top;
-            padding-top: 6px;
+            padding-top: 2px;
         }
 
         .totals-note {
             border-left: 2px solid #d8dce2;
             padding-left: 8px;
-            line-height: 1.6;
+            line-height: 1.45;
         }
 
         .totals-table {
@@ -265,8 +266,8 @@
         }
 
         .totals-table td {
-            padding: 5px 8px;
-            font-size: 10px;
+            padding: 4px 7px;
+            font-size: 9.5px;
             border: 1px solid #dfe3e8;
         }
 
@@ -284,8 +285,8 @@
             background: #1a1a2e !important;
             color: #ffffff !important;
             border-color: #1a1a2e !important;
-            font-size: 12px !important;
-            padding: 8px !important;
+            font-size: 11px !important;
+            padding: 6px !important;
         }
 
         .grand-row .k {
@@ -293,15 +294,22 @@
         }
 
         /* ===== Signature + Footer ===== */
+        /* Signature is anchored to the bottom of the LAST page, just above the footer */
+        .signature-wrap {
+            position: absolute;
+            bottom: 22mm;
+            left: 11mm;
+            width: 188mm;
+        }
+
         .signature-table {
             width: 100%;
-            margin-top: 26mm;
             border-collapse: collapse;
             table-layout: fixed;
         }
 
         .signature-table td {
-            font-size: 9px;
+            font-size: 8.5px;
             color: #555;
             text-align: center;
             vertical-align: bottom;
@@ -310,8 +318,8 @@
         .sign-line {
             border-top: 1px solid #999;
             width: 55mm;
-            margin: 0 auto 4px;
-            padding-top: 4px;
+            margin: 0 auto 3px;
+            padding-top: 3px;
         }
 
         .footer {
@@ -322,11 +330,11 @@
             background: #1a1a2e;
             color: #ffffff;
             text-align: center;
-            padding: 6px 12mm 7px;
+            padding: 5px 12mm 6px;
         }
 
         .footer .helpline {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
             letter-spacing: 0.4px;
         }
@@ -334,13 +342,13 @@
         .footer .policy {
             font-size: 8.5px;
             color: #c9ccd6;
-            margin-top: 2px;
+            margin-top: 1px;
         }
 
         .footer .thanks {
             font-size: 9px;
             color: #ffffff;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
         /* ===== Screen / Print helpers ===== */
@@ -567,6 +575,17 @@
         </table>
 
         {{-- Totals --}}
+        @php
+            // Net total after item-level discounts (e.g. 7000 - 1200 = 5800)
+            $netTotal = $mrpSubtotal - $totalDiscount;
+
+            // Special Discount: 1% of total value when order is 5000 or more
+            $specialDiscount = $netTotal >= 5000 ? ($netTotal * 1 / 100) : 0;
+
+            // Final payable after special discount (e.g. 5800 - 58 = 5742)
+            $netPayable = $netTotal - $specialDiscount;
+        @endphp
+
         <table class="totals-wrap" cellpadding="0" cellspacing="0">
             <tr>
                 <td class="totals-left">
@@ -585,26 +604,38 @@
                             <td class="k">Total Discount:</td>
                             <td class="v">- {{ number_format($totalDiscount, 2) }}</td>
                         </tr>
+                        <tr>
+                            <td class="k">Total:</td>
+                            <td class="v">{{ number_format($netTotal, 2) }}</td>
+                        </tr>
+                        @if ($specialDiscount > 0)
+                            <tr>
+                                <td class="k">Special Discount (1%):</td>
+                                <td class="v">- {{ number_format($specialDiscount, 2) }}</td>
+                            </tr>
+                        @endif
                         <tr class="grand-row">
                             <td class="k">NET PAYABLE:</td>
-                            <td class="v">{{ number_format($order->total_price, 2) }}</td>
+                            <td class="v">{{ number_format($netPayable, 2) }}</td>
                         </tr>
                     </table>
                 </td>
             </tr>
         </table>
 
-        {{-- Signatures --}}
-        <table class="signature-table" cellpadding="0" cellspacing="0">
-            <tr>
-                <td width="50%">
-                    <div class="sign-line">Customer Signature</div>
-                </td>
-                <td width="50%">
-                    <div class="sign-line">Authorized Signature</div>
-                </td>
-            </tr>
-        </table>
+        {{-- Signatures (anchored to the bottom of the last page, right above the footer) --}}
+        <div class="signature-wrap">
+            <table class="signature-table" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td width="50%">
+                        <div class="sign-line">Customer Signature</div>
+                    </td>
+                    <td width="50%">
+                        <div class="sign-line">Authorized Signature</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
 
     </div>
 
