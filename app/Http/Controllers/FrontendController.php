@@ -53,11 +53,19 @@ use Illuminate\Database\Eloquent\Builder;
 
 class FrontendController extends Controller
 {
-    public function __construct() {}
-
-
-    public function bot()
+    /**
+     * After normal product/part discounts, orders of Tk 5,000 or more
+     * receive an additional 1% special discount.
+     */
+    private const SPECIAL_DISCOUNT_THRESHOLD = 5000.00;
+    private const SPECIAL_DISCOUNT_PERCENT = 1.00;
+	public function __construct()
     {
+
+    }
+
+
+    public function bot(){
         // $products = Product::all();
         // foreach ($products as $row) {
         //     $slug = Str::slug($row->code.'-'.$row->brand->title.'-'.$row->name);
@@ -130,7 +138,7 @@ class FrontendController extends Controller
 
         $parts = ProductPart::all();
         foreach ($parts as $row) {
-            $slug = Str::slug($row->code . '-' . $row->brand->title . '-' . $row->name);
+            $slug = Str::slug($row->code.'-'.$row->brand->title.'-'.$row->name);
             $count = ProductPart::where('slug', $slug)->where('id', '!=', $row->id)->count();
             if ($count > 0) {
                 $slug = $slug . '-' . ($count + 1);
@@ -143,14 +151,43 @@ class FrontendController extends Controller
         return 'success';
     }
 
-    public function registration()
-    {
+    public function home() {
+
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        App::setLocale(Session::get('language'));
+
+		$categories =Category::where('show_home', 1)
+				->where('status', 1)
+				->orderBy('short_number', 'asc')
+				->get();
+
+		$services =Service::where('status', 1)->take(6)->get();
+
+		$newses =  News::where('status', 1)->take(6)->get();
+
+		$banners = Resource::where('status', 1)->where('type', 'banner')->orderBy('short_number', 'asc')->get();
+
+		$partners = Brand::where('status', 1)->where('show_home', 1)->get();
+
+		$products = Product::with('category')
+            ->where('status', 1)
+            ->where('features', 1)
+			->orderBy('short_number', 'asc')
+            ->get();
+
+        return view('frontend.pages.home',compact('categories', 'services', 'newses', 'products','banners', 'partners'));
+    }
+
+
+    public function registration() {
         App::setLocale(Session::get('language'));
         return view('frontend.pages.registration');
     }
 
-    public function login()
-    {
+    public function login() {
         if (Auth::check()) {
             return redirect()->route('home');
         }
@@ -158,34 +195,31 @@ class FrontendController extends Controller
         return view('backend.auth.login');
     }
 
-    public function about()
-    {
+    public function about() {
         App::setLocale(Session::get('language'));
         return view('frontend.pages.about');
     }
-    public function contact()
-    {
+    public function contact() {
         App::setLocale(Session::get('language'));
         $addresses = Contact::where('status', 1)->orderBy('is_default', 'desc')->get();
         return view('frontend.pages.contact', compact('addresses'));
     }
 
-    public function contactPost(Request $request)
-    {
-        $request->validate([
+    public function contactPost(Request $request){
+		$request->validate([
             'g-recaptcha-response' => 'required|captcha',
-            'subject' => 'required|max:50',
-            'message' => ['required', 'max:200', function ($attribute, $value, $fail) {
-                if (preg_match('/(?:https?|ftp):\/\/\S+/', $value)) {
-                    $fail('The message should not contain any URLs.');
-                }
-            }],
-            'sender_email' => 'required|email',
+			'subject' => 'required|max:50',
+			'message' => ['required', 'max:200', function ($attribute, $value, $fail) {
+				if (preg_match('/(?:https?|ftp):\/\/\S+/', $value)) {
+					$fail('The message should not contain any URLs.');
+				}
+			}],
+			'sender_email' => 'required|email',
             // Add other validation rules for your form fields
         ]);
 
         $subject = $request->subject ?? 'Contact mail';
-        $data = 'Someone trying to contact with you. Here is the details, </br> Name: ' . $request->name . ', </br> Email: ' . $request->email . ', Phone: ' . $request->phone . ', </br> Message: ' . $request->message . ' .';
+        $data = 'Someone trying to contact with you. Here is the details, </br> Name: '.$request->name.', </br> Email: '.$request->email.', Phone: '.$request->phone.', </br> Message: '.$request->message.' .';
         $admin_email = 'info@machinetoolsolutions.ca';
         Helper::sendEmail($admin_email, $subject, $data);
 
@@ -193,20 +227,18 @@ class FrontendController extends Controller
         return redirect()->back();
     }
 
-    public function categories()
-    {
+    public function categories() {
         App::setLocale(Session::get('language'));
-        $categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
-        return view('frontend.pages.categories', compact('categories'));
+		$categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
+        return view('frontend.pages.categories',compact('categories'));
     }
 
-    public function subcategory($id)
-    {
+    public function subcategory($id) {
         App::setLocale(Session::get('language'));
 
 
-        // Cache the current category and its subcategories
-        $currentCategory = Category::where('slug', $id)->with('subcategories')->first();
+		// Cache the current category and its subcategories
+		$currentCategory = Category::where('slug', $id)->with('subcategories')->first();
         if (!$currentCategory) {
             $currentCategory = Category::with('subcategories')->find($id);
         }
@@ -214,45 +246,45 @@ class FrontendController extends Controller
             return response()->view('errors.404', [], 404);
         }
 
-        $subCategories = $currentCategory->subcategories->where('status', 1);
+		$subCategories = $currentCategory->subcategories->where('status', 1);
 
-        if (count($subCategories) > 0) {
-            // Cache the products for the current category
-            $products = Product::where('category_id', $currentCategory->id)->orderBy('short_number', 'asc')->limit(1)->get();
+		if (count($subCategories) > 0) {
+			// Cache the products for the current category
+			$products = Product::where('category_id', $currentCategory->id)->orderBy('short_number', 'asc')->limit(1)->get();
 
-            return view('frontend.pages.subcategory', compact('currentCategory', 'subCategories', 'products'));
-        } else {
-            // Cache the categories
-            $categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
+			return view('frontend.pages.subcategory', compact('currentCategory', 'subCategories', 'products'));
+		} else {
+			// Cache the categories
+			$categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
 
-            // Cache other data needed for the products view
-            $brands = Brand::where('status', 1)->get();
+			// Cache other data needed for the products view
+			$brands = Brand::where('status', 1)->get();
 
-            $filter_attributes = ProductAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
-                ->where('type', 'attributes')
-                ->where('is_filter', 1)
-                ->groupBy('attribute_name')
-                ->orderBy('max_id')
-                ->get();
+			$filter_attributes =ProductAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
+					->where('type', 'attributes')
+					->where('is_filter', 1)
+					->groupBy('attribute_name')
+					->orderBy('max_id')
+					->get();
 
-            foreach ($filter_attributes as $row) {
-                $row->attributes_values = ProductAttribute::select('value')->where('type', 'attributes')->where('is_filter', 1)->where('attribute_name', $row->attribute_name)->whereNotNull('value')->groupBy('value')->get();
-            }
+			foreach ($filter_attributes as $row) {
+				$row->attributes_values = ProductAttribute::select('value')->where('type', 'attributes')->where('is_filter', 1)->where('attribute_name', $row->attribute_name)->whereNotNull('value')->groupBy('value')->get();
+			}
 
-            if ($currentCategory) {
-                $current_category = $currentCategory;
-                $root_category = $current_category->rootParent();
-            } else {
-                $current_category = [];
-                $root_category = [];
-            }
+			if ($currentCategory) {
+				$current_category = $currentCategory;
+				$root_category = $current_category->rootParent();
+			} else {
+				$current_category = [];
+				$root_category = [];
+			}
 
-            return view('frontend.pages.products', compact('brands', 'categories', 'filter_attributes', 'current_category', 'root_category', 'currentCategory'));
-        }
+			return view('frontend.pages.products', compact('brands', 'categories', 'filter_attributes', 'current_category', 'root_category', 'currentCategory'));
+		}
+
     }
 
-    public function brandWiseProduct($id)
-    {
+	public function brandWiseProduct($id) {
         App::setLocale(Session::get('language'));
         // Cache the current brand
         $current_brand = Brand::where('slug', $id)->first();
@@ -264,37 +296,36 @@ class FrontendController extends Controller
         }
 
 
-        // Cache the products for the current category
-        $products = Product::where('category_id', $current_brand->id)->orderBy('short_number', 'asc')->get();
+		// Cache the products for the current category
+		$products = Product::where('category_id', $current_brand->id)->orderBy('short_number', 'asc')->get();
 
-        // Cache the categories
-        $categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
+		// Cache the categories
+		$categories =Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
 
-        // Cache the brands
-        $brands = Brand::where('status', 1)->get();
+		// Cache the brands
+		$brands = Brand::where('status', 1)->get();
 
-        // Cache the filter attributes
-        $filter_attributes = ProductAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
-            ->where('type', 'attributes')
-            ->where('is_filter', 1)
-            ->groupBy('attribute_name')
-            ->orderBy('max_id')
-            ->get();
+		// Cache the filter attributes
+		$filter_attributes = ProductAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
+				->where('type', 'attributes')
+				->where('is_filter', 1)
+				->groupBy('attribute_name')
+				->orderBy('max_id')
+				->get();
 
-        // Cache the attributes values
-        foreach ($filter_attributes as $row) {
-            $row->attributes_values =  ProductAttribute::select('value')->where('type', 'attributes')->where('is_filter', 1)->where('attribute_name', $row->attribute_name)->whereNotNull('value')->groupBy('value')->get();
-        }
+		// Cache the attributes values
+		foreach ($filter_attributes as $row) {
+			$row->attributes_values =  ProductAttribute::select('value')->where('type', 'attributes')->where('is_filter', 1)->where('attribute_name', $row->attribute_name)->whereNotNull('value')->groupBy('value')->get();
+		}
 
-        $current_category = [];
-        $root_category = [];
-        $currentCategory = [];
+		$current_category = [];
+		$root_category = [];
+		$currentCategory = [];
 
-        return view('frontend.pages.products', compact('brands', 'categories', 'filter_attributes', 'current_category', 'root_category', 'currentCategory', 'current_brand'));
+		return view('frontend.pages.products', compact('brands', 'categories', 'filter_attributes', 'current_category', 'root_category', 'currentCategory', 'current_brand'));
     }
 
-    public function searchProductBycategory(Request $request)
-    {
+    public function searchProductBycategory(Request $request){
         App::setLocale(Session::get('language'));
         $products = Product::where('status', 1);
 
@@ -315,7 +346,6 @@ class FrontendController extends Controller
             // Fetch the category with its subcategories
             $category = Category::with('subcategories')->find($categoryId);
 
-
             // Get all descendant subcategory IDs
             $subcategoryIds = getAllDescendantIds($category);
 
@@ -327,72 +357,76 @@ class FrontendController extends Controller
         }
 
         if ($request->name) {
-            $products->where('name', 'like', "%" . $request->name . "%");
+            $products->where('name','like', "%" .$request->name ."%" );
         }
 
         if ($request->model) {
-            $products->where('code', 'like', "%" . $request->model . "%");
+            $products->where('code','like', "%" .$request->model ."%" );
         }
 
         $products = $products->orderBy('short_number', 'asc')->paginate(24);
         $productsHtml = view('frontend.pages.search.category-products', compact('products'))->render();
         $paginationHtml = json_decode(json_encode($products));
 
-        $pagination = '';
-        $visiblePages = 3;
+		$pagination = '';
+		$visiblePages = 3;
 
-        for ($i = 1; $i <= $paginationHtml->last_page; $i++) {
-            if ($i == $paginationHtml->current_page) {
-                $pagination .= '<li class="page-item active"><a class="page-link pagination_btn" href="#">' . $i . '</a></li>';
-            } else {
-                if ($i <= $visiblePages || $i > $paginationHtml->last_page - $visiblePages || abs($i - $paginationHtml->current_page) < floor($visiblePages / 2)) {
-                    $pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="' . $paginationHtml->path . '?page=' . $i . '">' . $i . '</a></li>';
-                } elseif ($i == $visiblePages + 1 || $i == $paginationHtml->last_page - $visiblePages) {
-                    $pagination .= '<li class="page-item disabled"><a class="page-link" href="#">...</a></li>';
-                }
-            }
-        }
+		for ($i = 1; $i <= $paginationHtml->last_page; $i++) {
+			if ($i == $paginationHtml->current_page) {
+				$pagination .= '<li class="page-item active"><a class="page-link pagination_btn" href="#">'.$i.'</a></li>';
+			} else {
+				if ($i <= $visiblePages || $i > $paginationHtml->last_page - $visiblePages || abs($i - $paginationHtml->current_page) < floor($visiblePages / 2)) {
+					$pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="'.$paginationHtml->path.'?page='.$i.'">'.$i.'</a></li>';
+				} elseif ($i == $visiblePages + 1 || $i == $paginationHtml->last_page - $visiblePages) {
+					$pagination .= '<li class="page-item disabled"><a class="page-link" href="#">...</a></li>';
+				}
+			}
+		}
 
-        // Add Previous Page link
-        if ($paginationHtml->current_page > 1) {
-            $pagination = '<li class="page-item"><a class="page-link pagination_btn" href="' . $paginationHtml->path . '?page=' . ($paginationHtml->current_page - 1) . '">Previous</a></li>' . $pagination;
-        }
+		// Add Previous Page link
+		if ($paginationHtml->current_page > 1) {
+			$pagination = '<li class="page-item"><a class="page-link pagination_btn" href="'.$paginationHtml->path.'?page='.($paginationHtml->current_page - 1).'">Previous</a></li>' . $pagination;
+		}
 
-        // Add Next Page link
-        if ($paginationHtml->current_page < $paginationHtml->last_page) {
-            $pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="' . $paginationHtml->path . '?page=' . ($paginationHtml->current_page + 1) . '">Next</a></li>';
-        }
+		// Add Next Page link
+		if ($paginationHtml->current_page < $paginationHtml->last_page) {
+			$pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="'.$paginationHtml->path.'?page='.($paginationHtml->current_page + 1).'">Next</a></li>';
+		}
 
         return response()->json([
             'products_html' => $productsHtml,
             'pagination_html' => ($productsHtml) ? $pagination : ''
         ]);
     }
-
     public function products($id)
     {
         App::setLocale(Session::get('language'));
-        // Cache the products for the current category
-        $products = Product::where('category_id', $id)->orderBy('short_number', 'asc')->orderBy('short_number', 'asc')->get();
 
-        // Cache the brands
+        /*
+         * Do not preload every product here.
+         * The listing is fetched from searchProducts() in pages of 20.
+         */
         $brands = Brand::where('status', 1)->get();
 
-        // Cache the categories (loose categories are shown in their own section, outside the filter)
-        $categories = Category::whereNull('parent_category')->where('status', 1)->where('is_loose', 0)->orderBy('short_number', 'asc')->get();
+        $categories = Category::whereNull('parent_category')
+            ->where('status', 1)
+            ->where('is_loose', 0)
+            ->orderBy('short_number', 'asc')
+            ->get();
 
-        // Loose product categories (separate section on the products page)
-        $loose_categories = Category::whereNull('parent_category')->where('status', 1)->where('is_loose', 1)->orderBy('short_number', 'asc')->get();
+        $loose_categories = Category::whereNull('parent_category')
+            ->where('status', 1)
+            ->where('is_loose', 1)
+            ->orderBy('short_number', 'asc')
+            ->get();
 
-        // Cache the filter attributes
-        $filter_attributes = ProductAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
+        $filter_attributes = ProductAttribute::select('attribute_name', DB::raw('MAX(id) as max_id'))
             ->where('type', 'attributes')
             ->where('is_filter', 1)
             ->groupBy('attribute_name')
             ->orderBy('max_id')
             ->get();
 
-        // Cache the attributes values
         foreach ($filter_attributes as $row) {
             $row->attributes_values = ProductAttribute::select('value')
                 ->where('type', 'attributes')
@@ -403,36 +437,52 @@ class FrontendController extends Controller
                 ->orderBy('value', 'asc')
                 ->get();
         }
-        return view('frontend.pages.products', compact('products', 'brands', 'categories', 'loose_categories', 'filter_attributes'));
-    }
 
+        // This route filters by the root category checkbox.
+        // current_category is reserved for an actual sub-category filter.
+        $current_category = null;
+        $root_category = Category::find($id);
+
+        return view('frontend.pages.products', compact(
+            'brands',
+            'categories',
+            'loose_categories',
+            'filter_attributes',
+            'current_category',
+            'root_category'
+        ));
+    }
     public function allProducts(Request $request)
     {
         App::setLocale(Session::get('language'));
-        // Cache the brands
-        $brands = cache()->remember('brands', now()->addHours(1), function () {
+
+        $brands = Cache::remember('brands', now()->addHours(1), function () {
             return Brand::where('status', 1)->get();
         });
 
-        // Cache the categories (loose categories are shown in their own section, outside the filter)
-        $categories = cache()->remember('categories_non_loose', now()->addHours(1), function () {
-            return Category::whereNull('parent_category')->where('status', 1)->where('is_loose', 0)->orderBy('short_number', 'asc')->get();
+        $categories = Cache::remember('categories_non_loose', now()->addHours(1), function () {
+            return Category::whereNull('parent_category')
+                ->where('status', 1)
+                ->where('is_loose', 0)
+                ->orderBy('short_number', 'asc')
+                ->get();
         });
 
-        // Loose product categories (separate section on the products page)
-        $loose_categories = cache()->remember('loose_categories', now()->addHours(1), function () {
-            return Category::whereNull('parent_category')->where('status', 1)->where('is_loose', 1)->orderBy('short_number', 'asc')->get();
+        $loose_categories = Cache::remember('loose_categories', now()->addHours(1), function () {
+            return Category::whereNull('parent_category')
+                ->where('status', 1)
+                ->where('is_loose', 1)
+                ->orderBy('short_number', 'asc')
+                ->get();
         });
 
-        // Cache the filter attributes
-        $filter_attributes = ProductAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
+        $filter_attributes = ProductAttribute::select('attribute_name', DB::raw('MAX(id) as max_id'))
             ->where('type', 'attributes')
             ->where('is_filter', 1)
             ->groupBy('attribute_name')
             ->orderBy('max_id')
             ->get();
 
-        // Cache the attributes values
         foreach ($filter_attributes as $row) {
             $row->attributes_values = ProductAttribute::select('value')
                 ->where('type', 'attributes')
@@ -444,105 +494,159 @@ class FrontendController extends Controller
                 ->get();
         }
 
-        // Cache the current category and related data
-        if (session()->has('currentCategory')) {
-            $current_category = session('currentCategory');
-
-            $root_category = $current_category->rootParent();
-
-            $sub_categories = Category::find($root_category->id)->subcategoriesRecursive;
+        if (Session::has('currentCategory')) {
+            $current_category = Session::get('currentCategory');
+            $root_category = $current_category ? $current_category->rootParent() : null;
         } else {
-            $current_category = [];
-            $root_category = [];
-            $sub_categories = [];
+            $current_category = null;
+            $root_category = null;
         }
 
-        return view('frontend.pages.products', compact('brands', 'categories', 'loose_categories', 'filter_attributes', 'current_category', 'root_category'));
+        return view('frontend.pages.products', compact(
+            'brands',
+            'categories',
+            'loose_categories',
+            'filter_attributes',
+            'current_category',
+            'root_category'
+        ));
     }
-
     public function searchProducts(Request $request)
     {
         App::setLocale(Session::get('language'));
+
         $subcategory = null;
         $isLooseMode = $request->boolean('loose');
+        $search = trim((string) $request->input('name', ''));
 
-        $products = Product::with('brand', 'category')->where('status', 1);
+        /*
+         * Only the 20 products for the requested page are hydrated.
+         * Attributes are eager-loaded to avoid N+1 queries while rendering cards.
+         */
+        $products = Product::query()
+            ->with(['brand', 'category', 'attributes'])
+            ->where('status', 1);
 
-        // Loose mode shows only loose-category products; normal mode excludes them
         if ($isLooseMode) {
             $products->where(function ($query) {
-                $query->whereHas('category', fn($q) => $q->where('is_loose', 1))
-                    ->orWhereHas('sub_category', fn($q) => $q->where('is_loose', 1));
+                $query->whereHas('category', function ($q) {
+                    $q->where('is_loose', 1);
+                })->orWhereHas('sub_category', function ($q) {
+                    $q->where('is_loose', 1);
+                });
             });
         } else {
             $products->where(function ($query) {
-                $query->whereDoesntHave('category', fn($q) => $q->where('is_loose', 1))
-                    ->whereDoesntHave('sub_category', fn($q) => $q->where('is_loose', 1));
+                $query->whereDoesntHave('category', function ($q) {
+                    $q->where('is_loose', 1);
+                })->whereDoesntHave('sub_category', function ($q) {
+                    $q->where('is_loose', 1);
+                });
             });
         }
 
-        if ($request->name) {
-            $products->where(function ($query) use ($request) {
-                $query->where('name', 'like', "%" . $request->name . "%")
-                    ->orWhereHas('brand', function ($q) use ($request) {
-                        $q->where('title', 'like', "%" . $request->name . "%");
+        /*
+         * Server-side search across the whole catalogue.
+         * The browser never needs all 10,000 products loaded first.
+         */
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+
+            $products->where(function ($query) use ($like) {
+                $query->where('name', 'like', $like)
+                    ->orWhere('code', 'like', $like)
+                    ->orWhereHas('brand', function ($q) use ($like) {
+                        $q->where('title', 'like', $like);
+                    })
+                    ->orWhereHas('category', function ($q) use ($like) {
+                        $q->where('title', 'like', $like);
                     });
             });
         }
-        if ($request->model) {
-            $products->where('code', 'like', "%" . $request->model . "%");
-        }
-        if ($request->brands_for_filter) {
-            $products->where(function ($products) use ($request) {
-                $products->whereIn('brand_id', $request->brands_for_filter);
-            });
+
+        if ($request->filled('model')) {
+            $products->where('code', 'like', '%' . trim((string) $request->model) . '%');
         }
 
-        if ($request->category_for_filter) {
-            $products->where(function ($products) use ($request) {
-                $products->whereIn('category_id', $request->category_for_filter);
-            });
+        $brandIds = array_values(array_filter((array) $request->input('brands_for_filter', [])));
+        if (!empty($brandIds)) {
+            $products->whereIn('brand_id', $brandIds);
         }
 
-        if ($request->current_category) {
-            $current_category =  Category::find($request->current_category);
+        $categoryIds = array_values(array_filter((array) $request->input('category_for_filter', [])));
+        if (!empty($categoryIds)) {
+            $products->whereIn('category_id', $categoryIds);
+        }
+
+        if ($request->filled('current_category')) {
+            $current_category = Category::find($request->current_category);
+
             if ($current_category) {
                 $subcategory = $current_category;
                 $products->where('sub_category_id', $current_category->id);
             }
         }
 
-        if ($request->attributes_for_filter) {
-            $products->whereHas('attributes', function ($query) use ($request) {
-                $query->whereIn('value', $request->attributes_for_filter);
+        $attributeValues = array_values(array_filter((array) $request->input('attributes_for_filter', [])));
+        if (!empty($attributeValues)) {
+            $products->whereHas('attributes', function ($query) use ($attributeValues) {
+                $query->whereIn('value', $attributeValues);
             });
         }
 
-        // Relevance ordering: names starting with the search term first
-        if ($request->name) {
-            $namePrefix = strtolower($request->name) . '%';
-            $products->orderByRaw("CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END, short_number ASC", [$namePrefix]);
-        } else {
-            $products->orderBy('short_number', 'asc');
+        /*
+         * Highest discount first.
+         * Fixed-amount discounts are converted to an effective percentage,
+         * so 50% and Tk 500 can be compared fairly across products.
+         */
+        $effectiveDiscountSql = "
+            CASE
+                WHEN COALESCE(discount, 0) <= 0 THEN 0
+                WHEN COALESCE(price, 0) <= 0 THEN 0
+                WHEN LOWER(COALESCE(discount_type, 'percent')) IN ('amount', 'fixed', 'flat')
+                    THEN (COALESCE(discount, 0) / NULLIF(price, 0)) * 100
+                ELSE COALESCE(discount, 0)
+            END
+        ";
+
+        $products->orderByRaw($effectiveDiscountSql . ' DESC');
+
+        /*
+         * For equal discounts, put stronger text matches first.
+         */
+        if ($search !== '') {
+            $prefix = mb_strtolower($search) . '%';
+
+            $products->orderByRaw(
+                "CASE
+                    WHEN LOWER(name) LIKE ? THEN 0
+                    WHEN LOWER(code) LIKE ? THEN 1
+                    ELSE 2
+                END ASC",
+                [$prefix, $prefix]
+            );
         }
 
-        $products = $products->paginate(20);
-        $productsHtml = view('frontend.pages.search.products', compact('products', 'subcategory'))->render();
+        /* Stable pagination order. */
+        $products->orderBy('short_number', 'asc')->orderBy('id', 'asc');
 
-        // Infinite scroll metadata (pagination UI removed — products load on scroll)
+        $products = $products->paginate(20);
+
+        $productsHtml = view(
+            'frontend.pages.search.products',
+            compact('products', 'subcategory')
+        )->render();
+
         return response()->json([
-            'products_html'   => $productsHtml,
-            'total'           => $products->total(),
-            'current_page'    => $products->currentPage(),
-            'last_page'       => $products->lastPage(),
-            'has_more_pages'  => $products->hasMorePages(),
+            'products_html' => $productsHtml,
+            'total' => $products->total(),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'has_more_pages' => $products->hasMorePages(),
+            'per_page' => $products->perPage(),
         ]);
     }
 
-    /**
-     * Lightweight live-search endpoint for the products page autocomplete.
-     * Returns the most relevant matches (name prefix match first, then name/code/brand contains).
-     */
     public function productSuggest(Request $request)
     {
         $q = trim((string) $request->get('q', ''));
@@ -552,77 +656,112 @@ class FrontendController extends Controller
         }
 
         $locale = Session::get('language') ?? 'en';
-        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], mb_strtolower($q));
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], mb_strtolower($q));
         $like = '%' . $escaped . '%';
         $prefix = $escaped . '%';
+
+        $effectiveDiscountSql = "
+            CASE
+                WHEN COALESCE(discount, 0) <= 0 THEN 0
+                WHEN COALESCE(price, 0) <= 0 THEN 0
+                WHEN LOWER(COALESCE(discount_type, 'percent')) IN ('amount', 'fixed', 'flat')
+                    THEN (COALESCE(discount, 0) / NULLIF(price, 0)) * 100
+                ELSE COALESCE(discount, 0)
+            END
+        ";
 
         $suggestions = Product::query()
             ->where('status', 1)
             ->where(function ($query) use ($like) {
                 $query->whereRaw('LOWER(name) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(code) LIKE ?', [$like])
-                    ->orWhereHas('brand', function ($b) use ($like) {
-                        $b->whereRaw('LOWER(title) LIKE ?', [$like]);
+                    ->orWhereHas('brand', function ($brandQuery) use ($like) {
+                        $brandQuery->whereRaw('LOWER(title) LIKE ?', [$like]);
                     });
             })
-            ->select('id', 'name', 'slug', 'thumbnail', 'code', 'price', 'discount', 'discount_type', 'short_number')
+            ->select('id', 'name', 'slug', 'thumbnail', 'code', 'price', 'discount', 'discount_type', 'short_number', 'brand_id')
             ->with('brand:id,title')
-            ->orderByRaw("CASE WHEN LOWER(name) LIKE ? THEN 0 WHEN LOWER(code) LIKE ? THEN 1 ELSE 2 END, short_number ASC", [$prefix, $prefix])
+            ->orderByRaw(
+                "CASE
+                    WHEN LOWER(name) LIKE ? THEN 0
+                    WHEN LOWER(code) LIKE ? THEN 1
+                    ELSE 2
+                END ASC",
+                [$prefix, $prefix]
+            )
+            ->orderByRaw($effectiveDiscountSql . ' DESC')
+            ->orderBy('short_number', 'asc')
             ->limit(8)
             ->get();
 
         return response()->json([
             'suggestions' => $suggestions->map(function ($product) use ($locale) {
-                $price = (float) $product->price;
+                $originalPrice = (float) ($product->price ?? 0);
                 $discount = (float) ($product->discount ?? 0);
+                $discountType = strtolower(trim((string) ($product->discount_type ?? 'percent')));
+                $finalPrice = $originalPrice;
 
-                if ($discount > 0) {
-                    $price = ($product->discount_type === 'amount')
-                        ? $price - $discount
-                        : $price - ($price * $discount) / 100;
+                if ($discount > 0 && $originalPrice > 0) {
+                    if (in_array($discountType, ['amount', 'fixed', 'flat'], true)) {
+                        $finalPrice = max(0, $originalPrice - $discount);
+                    } else {
+                        $finalPrice = max(0, $originalPrice - (($originalPrice * $discount) / 100));
+                    }
                 }
 
                 return [
                     'name' => $product->getTranslation($locale, 'title') ?? $product->name,
                     'code' => $product->code,
                     'url' => url('product/' . $product->slug),
-                    'thumbnail' => $product->thumbnail ? asset('uploads/product-images/' . $product->thumbnail) : null,
-                    'brand' => $product->brand?->title,
-                    'price' => $price > 0 ? number_format($price, 2) : null,
+                    'thumbnail' => $product->thumbnail
+                        ? asset('uploads/product-images/' . $product->thumbnail)
+                        : null,
+                    'brand' => optional($product->brand)->title,
+                    'price' => $finalPrice > 0 ? number_format($finalPrice, 2) : null,
                 ];
             })->values(),
         ]);
     }
-
     public function product_details($id)
     {
         App::setLocale(Session::get('language'));
-        $product = Product::with('brand', 'category')->where('slug', $id)->first();
+
+        $product = Product::with(['brand', 'category', 'attributes'])->where('slug', $id)->first();
+
         if (!$product) {
-            $product = Product::with('brand', 'category')->find($id);
+            $product = Product::with(['brand', 'category', 'attributes'])->find($id);
         }
+
         if (!$product) {
             return response()->view('errors.404', [], 404);
         }
-        $imagesArray = json_decode($product->images, true);
-        $product->images = $imagesArray;
 
+        $imagesArray = json_decode($product->images, true);
+        $product->images = is_array($imagesArray) ? $imagesArray : [];
 
         $releted_products = Product::where('sub_category_id', $product->sub_category_id)
             ->where('id', '!=', $product->id)
             ->where('status', 1)
+            ->orderByRaw("CASE WHEN COALESCE(discount, 0) > 0 THEN 0 ELSE 1 END")
+            ->orderBy('short_number', 'asc')
             ->get();
 
+        $catalogue = Catalogue::where('product_id', $product->id)
+            ->where('type', 'catalogue')
+            ->first();
 
-        $catalogue =  Catalogue::where('product_id', $product->id)->where('type', 'catalogue')->first();
+        $custom_fields = CustomField::where('status', 1)->get();
+        $releted_parts = $releted_products;
 
-        $custom_fields =  CustomField::where('status', 1)->get();
-        $releted_parts = $releted_products; // alias for product_details view
-        return view('frontend.pages.product_details', compact('product', 'releted_parts', 'catalogue', 'custom_fields'));
+        return view('frontend.pages.product_details', compact(
+            'product',
+            'releted_parts',
+            'catalogue',
+            'custom_fields'
+        ));
     }
 
-    public function allParts()
-    {
+    public function allParts(){
         App::setLocale(Session::get('language'));
         $brands = Brand::where('status', 1)->get();
         $parts = ProductPart::where('status', 1)->get();
@@ -634,40 +773,39 @@ class FrontendController extends Controller
             ->orderBy('max_id')
             ->get();
 
-        foreach ($filter_attributes as $row) {
+        foreach($filter_attributes as $row){
             $row->attributes_values = PartAttribute::select('value')->where('type', 'attributes')->where('is_filter', 1)->where('attribute_name', $row->attribute_name)->whereNotNull('value')->groupBy('value')->get();
         }
 
-        return view('frontend.pages.parts', compact('parts', 'brands', 'categories', 'filter_attributes'));
+        return view('frontend.pages.parts', compact('parts', 'brands','categories', 'filter_attributes'));
     }
 
-    public function searchParts(Request $request)
-    {
+    public function searchParts(Request $request){
         App::setLocale(Session::get('language'));
 
         $parts = ProductPart::where('status', 1);
 
         if ($request->name) {
-            $parts->where('name', 'like', "%" . $request->name . "%");
+            $parts->where('name','like', "%" .$request->name ."%" );
         }
 
         if ($request->model) {
-            $parts->where('code', 'like', "%" . $request->model . "%");
+            $parts->where('code','like', "%" .$request->model ."%" );
         }
 
-        if ($request->brands_for_filter) {
-            $parts->where(function ($parts) use ($request) {
+        if($request->brands_for_filter){
+            $parts->where(function($parts) use ($request){
                 $parts->whereIn('brand_id', $request->brands_for_filter);
             });
         }
 
-        if ($request->category_for_filter) {
-            $parts->where(function ($parts) use ($request) {
+        if($request->category_for_filter){
+            $parts->where(function($parts) use ($request){
                 $parts->whereIn('category_id', $request->category_for_filter);
             });
         }
 
-        if ($request->attributes_for_filter) {
+        if($request->attributes_for_filter){
             $parts->whereHas('attributes', function ($query) use ($request) {
                 $query->whereIn('value', $request->attributes_for_filter);
             });
@@ -675,49 +813,49 @@ class FrontendController extends Controller
 
         $parts = $parts->orderBy('short_number', 'asc')->paginate(20);
 
-        $partsHtml = view('frontend.pages.search.parts', compact('parts'))->render();
-        $paginationHtml = json_decode(json_encode($parts));
+		$partsHtml = view('frontend.pages.search.parts', compact('parts'))->render();
+		$paginationHtml = json_decode(json_encode($parts));
 
-        if ($parts->isEmpty()) {
-            return response()->json([
-                'products_html' => $partsHtml,
-                'pagination_html' => '',
-            ]);
-        }
+		if ($parts->isEmpty()) {
+			return response()->json([
+				'products_html' => $partsHtml,
+				'pagination_html' => '',
+			]);
+		}
 
-        $pagination = '';
-        $visiblePages = 2;
+		$pagination = '';
+		$visiblePages = 2;
 
-        for ($i = 1; $i <= $paginationHtml->last_page; $i++) {
-            if ($i == $paginationHtml->current_page) {
-                $pagination .= '<li class="page-item active"><a class="page-link pagination_btn" href="#">' . $i . '</a></li>';
-            } else {
-                if ($i <= $visiblePages || $i > $paginationHtml->last_page - $visiblePages || abs($i - $paginationHtml->current_page) < floor($visiblePages / 2)) {
-                    $pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="' . $paginationHtml->path . '?page=' . $i . '">' . $i . '</a></li>';
-                } elseif ($i == $visiblePages + 1 || $i == $paginationHtml->last_page - $visiblePages) {
-                    $pagination .= '<li class="page-item disabled"><a class="page-link" href="#">...</a></li>';
-                }
-            }
-        }
+		for ($i = 1; $i <= $paginationHtml->last_page; $i++) {
+			if ($i == $paginationHtml->current_page) {
+				$pagination .= '<li class="page-item active"><a class="page-link pagination_btn" href="#">'.$i.'</a></li>';
+			} else {
+				if ($i <= $visiblePages || $i > $paginationHtml->last_page - $visiblePages || abs($i - $paginationHtml->current_page) < floor($visiblePages / 2)) {
+					$pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="'.$paginationHtml->path.'?page='.$i.'">'.$i.'</a></li>';
+				} elseif ($i == $visiblePages + 1 || $i == $paginationHtml->last_page - $visiblePages) {
+					$pagination .= '<li class="page-item disabled"><a class="page-link" href="#">...</a></li>';
+				}
+			}
+		}
 
-        // Add Previous Page link
-        if ($paginationHtml->current_page > 1) {
-            $pagination = '<li class="page-item"><a class="page-link pagination_btn" href="' . $paginationHtml->path . '?page=' . ($paginationHtml->current_page - 1) . '">Previous</a></li>' . $pagination;
-        }
+		// Add Previous Page link
+		if ($paginationHtml->current_page > 1) {
+			$pagination = '<li class="page-item"><a class="page-link pagination_btn" href="'.$paginationHtml->path.'?page='.($paginationHtml->current_page - 1).'">Previous</a></li>' . $pagination;
+		}
 
-        // Add Next Page link
-        if ($paginationHtml->current_page < $paginationHtml->last_page) {
-            $pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="' . $paginationHtml->path . '?page=' . ($paginationHtml->current_page + 1) . '">Next</a></li>';
-        }
+		// Add Next Page link
+		if ($paginationHtml->current_page < $paginationHtml->last_page) {
+			$pagination .= '<li class="page-item"><a class="page-link pagination_btn" href="'.$paginationHtml->path.'?page='.($paginationHtml->current_page + 1).'">Next</a></li>';
+		}
 
         return response()->json([
             'products_html' => $partsHtml,
             'pagination_html' => ($partsHtml) ? $pagination : ''
         ]);
+
     }
 
-    public function partsDetails($id)
-    {
+    public function partsDetails($id) {
         App::setLocale(Session::get('language'));
 
         $part = ProductPart::where('slug', $id)->first();
@@ -731,16 +869,14 @@ class FrontendController extends Controller
         $imagesArray = json_decode($part->images, true);
         $part->images = $imagesArray;
         $custom_fields = CustomField::where('status', 1)->get();
-        return view('frontend.pages.part-details', compact('part', 'custom_fields'));
+        return view('frontend.pages.part-details',compact('part','custom_fields'));
     }
-
     public function AddToCart($type, $id, Request $request)
     {
         $productId = $id;
-        $quantity  = (int) $request->input('quantity', 1);
-        if ($quantity < 1) $quantity = 1;
-        if ($quantity > 99) $quantity = 99;
-        $isAjax = $request->ajax() || $request->wantsJson();
+        $quantity = (int) $request->input('quantity', 1);
+        $quantity = max(1, min($quantity, 99));
+        $isAjax = $request->ajax() || $request->wantsJson() || $request->expectsJson();
 
         $cartlist = $request->session()->get('cartlist', []);
 
@@ -748,121 +884,101 @@ class FrontendController extends Controller
             return redirect()->route('cart')->with('error', 'Product is already in your cart!');
         }
 
-        // New product OR AJAX re-add: add / update with the chosen quantity
         $cartlist[$productId] = [
             'quantity' => $quantity,
-            'type' => $type
+            'type' => $type,
         ];
 
         $request->session()->put('cartlist', $cartlist);
-
         $cartCount = count($cartlist);
 
         if ($isAjax) {
-            return response()->json(['status' => 'success', 'message' => 'Product added to cart!', 'cartCount' => $cartCount]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Product added to cart!',
+                'cartCount' => $cartCount,
+            ]);
         }
+
         return redirect()->route('cart')->with('message', 'Product added to cart!');
     }
 
 
-    public function getCartCount(Request $request)
-    {
-        $cartCount = count($request->session()->get('cartlist', []));
-        return response()->json($cartCount);
-    }
-
-
-
-
-
-
+        public function getCartCount(Request $request) {
+            $cartCount = count($request->session()->get('cartlist', []));
+            return response()->json($cartCount);
+        }
     public function removeFromCart($product_id, Request $request)
     {
-        $productId = $product_id;
+        $cartlist = $request->session()->get('cartlist', []);
+        unset($cartlist[$product_id]);
+        $request->session()->put('cartlist', $cartlist);
 
-        if ($request->session()->has('cartlist')) {
-            $cartlist = $request->session()->get('cartlist');
-
-            if (isset($cartlist[$productId])) {
-                unset($cartlist[$productId]);
-                $request->session()->put('cartlist', $cartlist);
-            }
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            $cartlist = $request->session()->get('cartlist', []);
+        if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
             return response()->json([
-                'status'    => 'success',
-                'message'   => 'Product removed from cart!',
+                'status' => 'success',
+                'message' => 'Product removed from cart!',
                 'cartCount' => count($cartlist),
             ]);
         }
 
-        return redirect()->route('cart')->with('message', 'Product remove from cart!');
+        return redirect()->route('cart')->with('message', 'Product removed from cart!');
     }
-
     public function incrementCart($product_id, Request $request)
     {
-        $productId = $product_id;
-        $newQty    = 1;
+        $cartlist = $request->session()->get('cartlist', []);
+        $newQty = 1;
 
-        if ($request->session()->has('cartlist')) {
-            $cartlist = $request->session()->get('cartlist');
-
-            if (isset($cartlist[$productId])) {
-                $cartlist[$productId]['quantity']++;
-                $newQty = $cartlist[$productId]['quantity'];
-                $request->session()->put('cartlist', $cartlist);
-            }
+        if (isset($cartlist[$product_id])) {
+            $cartlist[$product_id]['quantity'] = min(99, ((int) $cartlist[$product_id]['quantity']) + 1);
+            $newQty = $cartlist[$product_id]['quantity'];
+            $request->session()->put('cartlist', $cartlist);
         }
 
-        if ($request->ajax() || $request->wantsJson()) {
+        if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
             return response()->json([
-                'status'    => 'success',
-                'quantity'  => $newQty,
-                'cartCount' => count($request->session()->get('cartlist', [])),
+                'status' => 'success',
+                'quantity' => $newQty,
+                'cartCount' => count($cartlist),
             ]);
         }
 
-        return redirect()->route('cart')->with('message', 'Cart quantity increment!');
+        return redirect()->route('cart')->with('message', 'Cart quantity incremented!');
     }
-
     public function decrementCart($product_id, Request $request)
     {
-        $productId = $product_id;
-        $newQty    = 0;
-        $removed   = false;
+        $cartlist = $request->session()->get('cartlist', []);
+        $newQty = 0;
+        $removed = false;
 
-        if ($request->session()->has('cartlist')) {
-            $cartlist = $request->session()->get('cartlist');
-
-            if (isset($cartlist[$productId])) {
-                if ($cartlist[$productId]['quantity'] > 1) {
-                    $cartlist[$productId]['quantity']--;
-                    $newQty = $cartlist[$productId]['quantity'];
-                    $request->session()->put('cartlist', $cartlist);
-                } else {
-                    unset($cartlist[$productId]);
-                    $request->session()->put('cartlist', $cartlist);
-                    $removed = true;
-                }
+        if (isset($cartlist[$product_id])) {
+            if ((int) $cartlist[$product_id]['quantity'] > 1) {
+                $cartlist[$product_id]['quantity']--;
+                $newQty = $cartlist[$product_id]['quantity'];
+            } else {
+                unset($cartlist[$product_id]);
+                $removed = true;
             }
+
+            $request->session()->put('cartlist', $cartlist);
         }
 
-        if ($request->ajax() || $request->wantsJson()) {
+        if ($request->ajax() || $request->wantsJson() || $request->expectsJson()) {
             return response()->json([
-                'status'    => 'success',
-                'quantity'  => $newQty,
-                'removed'   => $removed,
-                'cartCount' => count($request->session()->get('cartlist', [])),
+                'status' => 'success',
+                'quantity' => $newQty,
+                'removed' => $removed,
+                'cartCount' => count($cartlist),
             ]);
         }
 
-        return redirect()->route('cart')->with('message', $removed ? 'Product removed from cart!' : 'Cart quantity decrement!');
+        return redirect()->route('cart')->with(
+            'message',
+            $removed ? 'Product removed from cart!' : 'Cart quantity decremented!'
+        );
     }
 
-    public function cart(Request $request)
-    {
+    public function cart(Request $request) {
         App::setLocale(Session::get('language'));
 
         $cartlist = $request->session()->get('cartlist', []);
@@ -893,20 +1009,19 @@ class FrontendController extends Controller
         return view('frontend.pages.cart', compact('carts'));
     }
 
-    public function cashonOrder(Request $request)
-    {
+    public function cashonOrder(Request $request){
         $validator = $request->validate([
-            'name' => 'required',
-            'phone' => 'required',
-            'email' => 'required',
-            'address' => 'required',
-            'post_code' => 'nullable',
-            'city' => 'nullable',
-            'state' => 'nullable',
-            'country' => 'nullable',
-        ]);
+			'name' => 'required',
+			'phone' => 'required',
+			'email' => 'required',
+			'address' => 'required',
+			'post_code' => 'nullable',
+			'city' => 'nullable',
+			'state' => 'nullable',
+			'country' => 'nullable',
+		]);
 
-        if (!Auth::user()) {
+        if(!Auth::user()){
             return redirect()->route('login')->withErrors(['msg' => 'You need to login first']);
         }
 
@@ -936,9 +1051,13 @@ class FrontendController extends Controller
             if ($item['type'] == 'product') {
                 $total_price = $total_price + $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
             } else {
-                $total_price = $total_price + ($item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id'])));
+                $total_price = $total_price + ($item['quantity'] * Helper::partPriceFaterOffer($item['product']['id']));
             }
         }
+
+        // Apply extra 1% only AFTER all normal item discounts.
+        $specialDiscount = $this->calculateSpecialOrderDiscount($total_price);
+        $total_price = round($total_price - $specialDiscount, 2);
 
         $order = new Order();
         $order->user_id = Auth::user()->id;
@@ -972,35 +1091,30 @@ class FrontendController extends Controller
                 $order_detail->type = $item['type'];
                 $order_detail->quantity = $item['quantity'];
 
-                // unit_price = MRP, discount = the applied offer, subtotal = net amount.
-                // This lets the invoice show MRP / Discount / Rate correctly.
                 if ($item['type'] == 'product') {
-                    $net_price = Helper::priceAfterOffer($item['product']['id']);
-                    $order_detail->unit_price = $item['product']['price'];
-
-                    $offer = Helper::productOffer($item['product']['id'], $order->user_id);
-                    $order_detail->discount_type = $offer['discount'] > 0 ? $offer['type'] : '';
-                    $order_detail->discount = $offer['discount'];
-                } else {
-                    $net_price = Helper::partPriceFaterOffer($item['product']['id']);
-                    $order_detail->unit_price = $item['product']['price'];
-                    $order_detail->discount_type = ($item['product']->discount ?? 0) > 0 ? ($item['product']['discount_type'] ?? '') : '';
-                    $order_detail->discount = $item['product']->discount ?? 0;
+                    $order_detail->unit_price = Helper::priceAfterOffer($item['product']['id']);
+                }else{
+                    $order_detail->unit_price = Helper::partPriceFaterOffer($item['product']['id']);
                 }
 
-                $order_detail->subtotal = $item['quantity'] * $net_price;
+                $order_detail->discount_type = $item['product']['discount_type'] ?? '';
+                $order_detail->discount = $item['product']['discount'];
+                if ($item['type'] == 'product') {
+                    $order_detail->subtotal = $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
+                }else{
+                    $order_detail->subtotal = $item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id']));
+                }
                 $order_detail->save();
             }
             $request->session()->forget('cartlist');
 
             return redirect()->back()->with('message', 'Order place successfully!');
-        } else {
+        }else{
             return redirect()->back()->with('error', 'Something went wrong!');
         }
     }
 
-    public function PlaceOrder(Request $request)
-    {
+    public function PlaceOrder(Request $request){
 
         // get cart
         $cartlist = $request->session()->get('cartlist', []);
@@ -1029,14 +1143,18 @@ class FrontendController extends Controller
             if ($item['type'] == 'product') {
                 $total_price = $total_price + $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
             } else {
-                $total_price = $total_price + ($item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id'])));
+                $total_price = $total_price + ($item['quantity'] * Helper::partPriceFaterOffer($item['product']['id']));
             }
         }
+
+        // Online payment must charge the FINAL amount after the 1% rule.
+        $specialDiscount = $this->calculateSpecialOrderDiscount($total_price);
+        $total_price = round($total_price - $specialDiscount, 2);
 
         $actual_price = ($total_price / 100);
 
 
-        $user = Company::where('user_id', Auth::user()->id)->first();
+        $user = Company::where('user_id',Auth::user()->id)->first();
 
         $config = new GpEcomConfig();
         $config->merchantId = "dev288251102910164081";
@@ -1076,25 +1194,24 @@ class FrontendController extends Controller
         $shippingAddress->country = $request->country;
 
         try {
-            $hppJson = $service->charge(0.0)
-                ->withCurrency("USD")
-                ->withAmount($actual_price)
-                ->withDescription($request->note)
-                ->withOrderId(substr(uniqid(), 0, 13) . '-ordr-' . random_int(10000000000000000, 99999999999999999))
-                ->withHostedPaymentData($hostedPaymentData)
-                ->withAddress($billingAddress, AddressType::BILLING)
-                ->withAddress($shippingAddress, AddressType::SHIPPING)
-                ->serialize();
+        $hppJson = $service->charge(0.0)
+            ->withCurrency("USD")
+            ->withAmount($actual_price)
+            ->withDescription($request->note)
+            ->withOrderId(substr(uniqid(), 0, 13).'-ordr-'.random_int(10000000000000000, 99999999999999999))
+            ->withHostedPaymentData($hostedPaymentData)
+            ->withAddress($billingAddress, AddressType::BILLING)
+            ->withAddress($shippingAddress, AddressType::SHIPPING)
+            ->serialize();
 
             return $hppJson;
-            // TODO: pass the HPP JSON to the client-side
+        // TODO: pass the HPP JSON to the client-side
         } catch (ApiException $e) {
-            // TODO: Add your error handling here
+        // TODO: Add your error handling here
         }
     }
 
-    public function AfterOrder(Request $request)
-    {
+    public function AfterOrder(Request $request){
         // configure client settings
         $config = new GpEcomConfig();
         $config->merchantId = "dev288251102910164081";
@@ -1158,9 +1275,13 @@ class FrontendController extends Controller
                 if ($item['type'] == 'product') {
                     $total_price = $total_price + $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
                 } else {
-                    $total_price = $total_price + ($item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id'])));
+                    $total_price = $total_price + ($item['quantity'] * Helper::partPriceFaterOffer($item['product']['id']));
                 }
             }
+
+            // Save the same final payable amount that was used for payment.
+            $specialDiscount = $this->calculateSpecialOrderDiscount($total_price);
+            $total_price = round($total_price - $specialDiscount, 2);
 
             $order = new Order();
             $order->id = $responseValues['ORDER_ID'];
@@ -1195,28 +1316,24 @@ class FrontendController extends Controller
                     $order_detail->type = $item['type'];
                     $order_detail->quantity = $item['quantity'];
 
-                    // unit_price = MRP, discount = the applied offer, subtotal = net amount.
-                    // This lets the invoice show MRP / Discount / Rate correctly.
                     if ($item['type'] == 'product') {
-                        $net_price = Helper::priceAfterOffer($item['product']['id']);
-                        $order_detail->unit_price = $item['product']['price'];
-
-                        $offer = Helper::productOffer($item['product']['id'], $order->user_id);
-                        $order_detail->discount_type = $offer['discount'] > 0 ? $offer['type'] : '';
-                        $order_detail->discount = $offer['discount'];
-                    } else {
-                        $net_price = Helper::partPriceFaterOffer($item['product']['id']);
-                        $order_detail->unit_price = $item['product']['price'];
-                        $order_detail->discount_type = ($item['product']->discount ?? 0) > 0 ? ($item['product']['discount_type'] ?? '') : '';
-                        $order_detail->discount = $item['product']->discount ?? 0;
+                        $order_detail->unit_price = Helper::priceAfterOffer($item['product']['id']);
+                    }else{
+                        $order_detail->unit_price = Helper::partPriceFaterOffer($item['product']['id']);
                     }
 
-                    $order_detail->subtotal = $item['quantity'] * $net_price;
+                    $order_detail->discount_type = $item['product']['discount_type'] ?? '';
+                    $order_detail->discount = $item['product']['discount'];
+                    if ($item['type'] == 'product') {
+                        $order_detail->subtotal = $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
+                    }else{
+                        $order_detail->subtotal = $item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id']));
+                    }
                     $order_detail->save();
                 }
                 $request->session()->forget('cartlist');
 
-                if ($responseCode == '00') {
+                if($responseCode == '00'){
                     $update_order = Order::find($order->id);
                     $update_order->payment_method = 'Online payment';
                     $update_order->transaction_id = $variable->transactionId;
@@ -1229,7 +1346,7 @@ class FrontendController extends Controller
                     $transaction->amount = $authorizedAmount;
                     $transaction->response = $responseJson;
                     $transaction->save();
-                } else {
+                }else{
                     $update_order = Order::find($order->id);
                     $update_order->payment_method = 'Online payment';
                     $update_order->transaction_id = $variable->transactionId;
@@ -1246,11 +1363,29 @@ class FrontendController extends Controller
 
                 return redirect()->back()->with('message', 'Order place successfully!');
             }
+
         } catch (ApiException $e) {
             return $e;
             // For example if the SHA1HASH doesn't match what is expected
             // TODO: add your error handling here
         }
+    }
+
+
+    /**
+     * Special discount is calculated on the order value AFTER normal
+     * product/part discounts. Exactly Tk 5,000 is eligible.
+     */
+    private function calculateSpecialOrderDiscount(float $afterItemDiscount): float
+    {
+        if ($afterItemDiscount < self::SPECIAL_DISCOUNT_THRESHOLD) {
+            return 0.00;
+        }
+
+        return round(
+            $afterItemDiscount * (self::SPECIAL_DISCOUNT_PERCENT / 100),
+            2
+        );
     }
 
     private function generateHash($data, $secret)
@@ -1310,8 +1445,7 @@ class FrontendController extends Controller
     }
 
 
-    public function wishlist(Request $request)
-    {
+    public function wishlist(Request $request) {
         App::setLocale(Session::get('language'));
         $wishlist = $request->session()->get('wishlist', []);
         $productIds = array_keys($wishlist);
@@ -1337,20 +1471,15 @@ class FrontendController extends Controller
         return view('frontend.pages.wishlist', compact('wishlistItems'));
     }
 
-    public function AddTowishlist($type, $id, Request $request)
-    {
+    public function AddTowishlist($type, $id, Request $request) {
         $productId = $id;
         $quantity = 1;
-        $isAjax = $request->ajax() || $request->wantsJson();
 
         if ($request->session()->has('cartlist')) {
             $cartlist = $request->session()->get('cartlist');
 
             if (isset($cartlist[$productId])) {
-                if ($isAjax) {
-                    return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
-                }
-                return redirect()->back()->with('error', 'Product is already in your cart!');
+                return response()->json(['status' => 'error', 'message' => 'Product is already in your cart!']);
             }
         }
 
@@ -1358,12 +1487,9 @@ class FrontendController extends Controller
             $wishlist = $request->session()->get('wishlist');
 
             if (isset($wishlist[$productId])) {
-                unset($wishlist[$productId]);
+				unset($wishlist[$productId]);
                 $request->session()->put('wishlist', $wishlist);
-                if ($isAjax) {
-                    return response()->json(['status' => 'removed', 'message' => 'Product remove from wishlist!']);
-                }
-                return redirect()->route('wishlist')->with('message', 'Product remove from wishlist!');
+                return response()->json(['status' => 'error', 'message' => 'Product remove from wishlist!']);
             }
 
             // Add the product to the wishlist
@@ -1382,23 +1508,18 @@ class FrontendController extends Controller
 
         $request->session()->put('wishlist', $wishlist);
 
-        if ($isAjax) {
-            return response()->json(['status' => 'success', 'message' => 'Product added to wishlist!']);
-        }
-        return redirect()->route('wishlist')->with('message', 'Product added to wishlist!');
+        return response()->json(['status' => 'success', 'message' => 'Product added to wishlist!']);
     }
 
     // wishlist-badge
 
-    public function getWishlistCount(Request $request)
-    {
+    public function getWishlistCount(Request $request) {
         $wishlistCount = count($request->session()->get('wishlist', []));
         return response()->json($wishlistCount);
     }
 
 
-    public function removeFromWishlist($product_id, Request $request)
-    {
+    public function removeFromWishlist($product_id, Request $request){
         $productId = $product_id;
 
         if ($request->session()->has('wishlist')) {
@@ -1413,8 +1534,7 @@ class FrontendController extends Controller
         return redirect()->route('wishlist')->with('message', 'Product remove from wishlist!');
     }
 
-    public function incrementWishlist($product_id, Request $request)
-    {
+    public function incrementWishlist($product_id, Request $request){
         $productId = $product_id;
         if ($request->session()->has('wishlist')) {
             $wishlist = $request->session()->get('wishlist');
@@ -1427,8 +1547,7 @@ class FrontendController extends Controller
         return redirect()->route('wishlist')->with('message', 'Quantity updated!');
     }
 
-    public function decrementWishlist($product_id, Request $request)
-    {
+	public function decrementWishlist($product_id, Request $request){
         $productId = $product_id;
         if ($request->session()->has('wishlist')) {
             $wishlist = $request->session()->get('wishlist');
@@ -1449,8 +1568,7 @@ class FrontendController extends Controller
         return redirect()->route('wishlist')->with('message', 'Wishlist updated!');
     }
 
-    public function AddToInquiry($product_id, Request $request)
-    {
+    public function AddToInquiry($product_id, Request $request){
         $productId = $product_id;
         $quantity = 1;
 
@@ -1471,8 +1589,7 @@ class FrontendController extends Controller
         return redirect()->route('inquiry')->with('message', 'Product added to inquiry list!');
     }
 
-    public function inquiry(Request $request)
-    {
+    public function inquiry(Request $request) {
         App::setLocale(Session::get('language'));
         $inquirylist = $request->session()->get('inquirylist', []);
 
@@ -1494,8 +1611,7 @@ class FrontendController extends Controller
         return view('frontend.pages.inquiry', compact('inquirylistItems'));
     }
 
-    public function removeFromInquirylist($product_id, Request $request)
-    {
+    public function removeFromInquirylist($product_id, Request $request){
         $productId = $product_id;
 
         if ($request->session()->has('inquirylist')) {
@@ -1510,8 +1626,7 @@ class FrontendController extends Controller
         return redirect()->route('inquiry')->with('message', 'Product remove from inquiry list!');
     }
 
-    public function incrementInquirylist($product_id, Request $request)
-    {
+    public function incrementInquirylist($product_id, Request $request){
         $productId = $product_id;
         if ($request->session()->has('inquirylist')) {
             $inquirylist = $request->session()->get('inquirylist');
@@ -1524,8 +1639,7 @@ class FrontendController extends Controller
         return redirect()->route('inquiry')->with('message', 'Quantity updated!');
     }
 
-    public function decrementInquirylist($product_id, Request $request)
-    {
+    public function decrementInquirylist($product_id, Request $request){
         $productId = $product_id;
         if ($request->session()->has('inquirylist')) {
             $inquirylist = $request->session()->get('inquirylist');
@@ -1543,26 +1657,24 @@ class FrontendController extends Controller
         return redirect()->route('inquiry')->with('message', 'Quantity updated!');
     }
 
-    public function inquiryRequest()
-    {
+    public function inquiryRequest() {
         App::setLocale(Session::get('language'));
         return view('frontend.pages.inquiryRequest');
     }
 
-    public function inquiryRequestSend(Request $request)
-    {
+    public function inquiryRequestSend(Request $request){
 
         $validator = $request->validate([
-            'company' => 'required',
-            'name' => 'required',
-            'phone' => 'required',
-            'email' => 'required',
-            'address' => 'required',
-            'post_code' => 'required',
-            'city' => 'required',
-            'state' => 'required',
-            'country' => 'required',
-        ]);
+			'company' => 'required',
+			'name' => 'required',
+			'phone' => 'required',
+			'email' => 'required',
+			'address' => 'required',
+			'post_code' => 'required',
+			'city' => 'required',
+			'state' => 'required',
+			'country' => 'required',
+		]);
 
         $inquiry = new Inquiry();
         $inquiry->user_id = Auth::user()->id ?? '';
@@ -1615,62 +1727,59 @@ class FrontendController extends Controller
 
             return redirect()->back()->with('message', 'Inquiry request submited!');
         }
+
     }
 
-    public function catalogues()
-    {
+    public function catalogues() {
         App::setLocale(Session::get('language'));
         $brands = Cache::remember('brands', now()->addHours(1), function () {
-            return Brand::where('status', 1)->get();
-        });
+			return Brand::where('status', 1)->get();
+		});
 
-        $categories = Cache::remember('categories', now()->addHours(1), function () {
-            return Category::where('status', 1)->where('is_parent', 1)->get();
-        });
+		$categories = Cache::remember('categories', now()->addHours(1), function () {
+			return Category::where('status', 1)->where('is_parent', 1)->get();
+		});
         return view('frontend.pages.catalogues', compact('brands', 'categories'));
     }
 
-    public function searchCatalogue(Request $request)
-    {
+    public function searchCatalogue(Request $request){
         App::setLocale(Session::get('language'));
         $catalogues = Catalogue::where('status', 1)->where('type', 'catalogue');
 
-        if ($request->brand) {
-            $catalogues->where(function ($catalogues) use ($request) {
+        if($request->brand){
+            $catalogues->where(function($catalogues) use ($request){
                 $catalogues->whereIn('brand_id', $request->brand);
             });
         }
 
-        if ($request->category) {
-            $catalogues->where(function ($catalogues) use ($request) {
+        if($request->category){
+            $catalogues->where(function($catalogues) use ($request){
                 $catalogues->whereIn('category_id', $request->category);
             });
         }
 
-        if ($request->title) {
-            $catalogues->where('title', 'like', "%" . $request->title . "%");
+		if ($request->title) {
+            $catalogues->where('title','like', "%" .$request->title ."%" );
         }
 
         $catalogues = $catalogues->orderBy('brand_id', 'asc')->get();
         return view('frontend.pages.search.catalogues', compact('catalogues'));
     }
 
-    public function downloadCatalogue($lang, $catalogue_id)
-    {
+    public function downloadCatalogue($lang, $catalogue_id){
 
         $catalogue = Catalogue::find($catalogue_id);
         $fileName = $catalogue->getTranslation($lang, 'file');
-        if (file_exists(public_path('uploads/catalogue-files/' . $fileName))) {
-            return response()->download(public_path('uploads/catalogue-files/' . $fileName));
-        } else {
+        if (file_exists(public_path('uploads/catalogue-files/'.$fileName))) {
+            return response()->download(public_path('uploads/catalogue-files/'.$fileName));
+        }else{
             return redirect()->back();
         }
     }
 
-    public function viewCatalogue($catalogue_id)
-    {
+    public function viewCatalogue($catalogue_id){
         App::setLocale(Session::get('language'));
-        $catalogue = Catalogue::where('slug', $catalogue_id)->first();
+        $catalogue = Catalogue::where('slug',$catalogue_id)->first();
         $catalogue_files = '';
         if ($catalogue) {
             // $catalogue = Catalogue::find($catalogue_id);
@@ -1679,67 +1788,62 @@ class FrontendController extends Controller
         if (!$catalogue) {
             return response()->view('errors.404', [], 404);
         }
-        return view('frontend.pages.catalogue-view', compact('catalogue', 'catalogue_files'));
+        return view('frontend.pages.catalogue-view', compact('catalogue','catalogue_files'));
     }
 
-    public function manuals()
-    {
+	public function manuals() {
         App::setLocale(Session::get('language'));
         $brands = Cache::remember('brands', now()->addHours(1), function () {
-            return Brand::where('status', 1)->get();
-        });
+			return Brand::where('status', 1)->get();
+		});
 
-        $categories = Cache::remember('categories', now()->addHours(1), function () {
-            return Category::where('status', 1)->where('is_parent', 1)->get();
-        });
+		$categories = Cache::remember('categories', now()->addHours(1), function () {
+			return Category::where('status', 1)->where('is_parent', 1)->get();
+		});
         return view('frontend.pages.manuals', compact('brands', 'categories'));
     }
 
-    public function forms()
-    {
+	public function forms() {
         App::setLocale(Session::get('language'));
         $brands = Cache::remember('brands', now()->addHours(1), function () {
-            return Brand::where('status', 1)->get();
-        });
+			return Brand::where('status', 1)->get();
+		});
 
-        $categories = Cache::remember('categories', now()->addHours(1), function () {
-            return Category::where('status', 1)->where('is_parent', 1)->get();
-        });
+		$categories = Cache::remember('categories', now()->addHours(1), function () {
+			return Category::where('status', 1)->where('is_parent', 1)->get();
+		});
         return view('frontend.pages.forms', compact('brands', 'categories'));
     }
 
-    public function formsDetails($id)
-    {
-        $catalogue = Catalogue::where('slug', $id)->first();
+	public function formsDetails($id){
+        $catalogue = Catalogue::where('slug',$id)->first();
         if (!$catalogue) {
             $catalogue = Catalogue::find($id);
         }
         if (!$catalogue) {
             return response()->view('errors.404', [], 404);
         }
-        return view('frontend.pages.form-details', compact('catalogue'));
-    }
+		return view('frontend.pages.form-details', compact('catalogue'));
+	}
 
-    public function formsSubmit(Request $request)
-    {
-        $validator = $request->validate([
-            'name' => 'required',
-            'file' => 'required|mimes:pdf',
-            'email' => 'required',
-        ]);
+	public function formsSubmit(Request $request){
+		$validator = $request->validate([
+			'name' => 'required',
+			'file' => 'required|mimes:pdf',
+			'email' => 'required',
+		]);
 
-        $subject = 'Form request';
-        $data = $request->name . 'Uploaded a new form files. Here is the details, </br> Name: ' . $request->name . ', </br> Email: ' . $request->email . ', </br> Message: ' . $request->note . ' .';
+		$subject = 'Form request';
+        $data = $request->name.'Uploaded a new form files. Here is the details, </br> Name: '.$request->name.', </br> Email: '.$request->email.', </br> Message: '.$request->note.' .';
         $admin_email = 'abusaid.nexkraft@gmail.com';
         Helper::sendEmail($admin_email, $subject, $data);
 
         return redirect()->back()->with('success', 'Email send successfully! We will contact with you soon.');
-    }
+	}
 
-    public function news()
-    {
+    public function news() {
         App::setLocale(Session::get('language'));
-        $months = DB::select(DB::raw("SELECT
+		$months = DB::select(DB::raw("SELECT
                                 CONCAT(month, '-', year) AS month_year,
                                 news_count
                             FROM (
@@ -1756,8 +1860,7 @@ class FrontendController extends Controller
                                 year, month"));
         return view('frontend.pages.news', compact('months'));
     }
-    public function newsDetails($news_id)
-    {
+    public function newsDetails($news_id) {
         App::setLocale(Session::get('language'));
 
         $news = News::where('slug', $news_id)->first();
@@ -1768,37 +1871,36 @@ class FrontendController extends Controller
             return response()->view('errors.404', [], 404);
         }
 
-        $imagesArray = json_decode($news->gallery_images, true);
+		$imagesArray = json_decode($news->gallery_images, true);
         $news->gallery_images = $imagesArray;
 
         return view('frontend.pages.newsDetails', compact('news'));
     }
-    public function searchNews(Request $request)
-    {
+    public function searchNews(Request $request){
         App::setLocale(Session::get('language'));
         $news = News::where('status', 1);
 
-        if ($request->year) {
-            $news->where(function ($news) use ($request) {
-                foreach ($request->year as $date) {
-                    $year = date('Y', strtotime($date));
-                    $month = date('m', strtotime($date));
+		if($request->year){
+            $news->where(function($news) use ($request){
+				foreach ($request->year as $date) {
+					$year = date('Y', strtotime($date));
+					$month = date('m', strtotime($date));
 
-                    $news->orWhere(function ($news) use ($year, $month) {
-                        $news->whereYear('publish_date', $year)->whereMonth('publish_date', $month);
-                    });
-                }
+					$news->orWhere(function ($news) use ($year, $month) {
+						$news->whereYear('publish_date', $year)->whereMonth('publish_date', $month);
+					});
+				}
             });
         }
 
-        if ($request->category) {
-            $news->where(function ($news) use ($request) {
+		if($request->category){
+            $news->where(function($news) use ($request){
                 $news->whereIn('category', $request->category);
             });
         }
 
         if ($request->title) {
-            $news->where('title', 'like', "%" . $request->title . "%");
+            $news->where('title','like', "%" .$request->title ."%" );
         }
 
 
@@ -1808,14 +1910,12 @@ class FrontendController extends Controller
 
 
 
-    public function services()
-    {
+    public function services() {
         App::setLocale(Session::get('language'));
         $services = Service::where('status', 1)->get();
         return view('frontend.pages.services', compact('services'));
     }
-    public function serviceDetails($id)
-    {
+    public function serviceDetails($id) {
         App::setLocale(Session::get('language'));
         $service = Service::where('slug', $id)->first();
         if (!$service) {
@@ -1828,8 +1928,7 @@ class FrontendController extends Controller
         return view('frontend.pages.serviceDetails', compact('service'));
     }
 
-    public function AddToService($service_id, Request $request)
-    {
+    public function AddToService($service_id, Request $request){
         if ($request->session()->has('servicelist')) {
             $servicelist = $request->session()->get('servicelist');
 
@@ -1846,19 +1945,17 @@ class FrontendController extends Controller
         return redirect()->route('service.order');
     }
 
-    public function serviceOrder()
-    {
+    public function serviceOrder(){
         App::setLocale(Session::get('language'));
         return view('frontend.pages.service-order');
     }
 
-    public function serviceOrderSend(Request $request)
-    {
+    public function serviceOrderSend(Request $request){
         $validator = $request->validate([
-            'name' => 'required',
-            'email' => 'required',
-            'address' => 'required',
-        ]);
+			'name' => 'required',
+			'email' => 'required',
+			'address' => 'required',
+		]);
 
         $order = new ServiceOrder();
         $order->user_id = Auth::user()->id ?? null;
@@ -1869,7 +1966,7 @@ class FrontendController extends Controller
         $order->address = $request->address;
         $order->message = $request->note;
 
-        $service_information = [];
+        $service_information =[];
 
 
         $servicelist = $request->session()->get('servicelist', []);
@@ -1878,12 +1975,12 @@ class FrontendController extends Controller
         foreach ($service as $row) {
             $service = Service::find($row->id);
 
-            if ($request->hasFile('thumbnail')) {
+            if($request->hasFile('thumbnail')){
                 $thumbnail = $request->file('thumbnail');
-                $filename = time() . uniqid() . $thumbnail->getClientOriginalName();
+                $filename = time().uniqid().$thumbnail->getClientOriginalName();
                 $thumbnail->move(public_path('uploads/service-order'), $filename);
                 $file = $filename;
-            } else {
+            }else{
                 $file = '';
             }
 
@@ -1902,44 +1999,39 @@ class FrontendController extends Controller
             $request->session()->forget('servicelist');
 
             return redirect()->back()->with('message', 'Order place successfully!');
-        } else {
+        }else{
             return redirect()->back()->with('error', 'Something went wrong!');
         }
     }
 
-    public function order()
-    {
+        public function order() {
         App::setLocale(Session::get('language'));
         $countrycodes = Helper::getCountryCodes();
 
         // Fetch the company associated with the logged-in user
         $company = null;
-        if (Auth::check()) {
+        if(Auth::check()){
             $company = Company::where('user_id', Auth::user()->id)->first();
         }
 
         return view('frontend.pages.order', compact('countrycodes', 'company'));
     }
-    public function pdf()
-    {
+    public function pdf() {
         App::setLocale(Session::get('language'));
         return view('frontend.pages.pdf');
     }
-    public function calculator()
-    {
+    public function calculator() {
         App::setLocale(Session::get('language'));
         return view('frontend.pages.calculator');
     }
-    public function forgotPassword()
-    {
+    public function forgotPassword() {
         App::setLocale(Session::get('language'));
         return view('frontend.pages.forgotPassword');
     }
 
-    public function resetOtpSend(Request $request)
-    {
+    public function resetOtpSend(Request $request){
 
-        if (User::where('email', $request->email)->exists()) {
+        if(User::where('email', $request->email)->exists()){
             $email = $request->email;
             $otps = random_int(100000, 999999);
             $subject = 'Password Reset';
@@ -1954,13 +2046,12 @@ class FrontendController extends Controller
             $otp->save();
 
             return view('frontend.pages.otp', compact('email'));
-        } else {
+        }else{
             return redirect()->back()->withErrors(['message' => 'There is no account with this email!']);
         }
     }
 
-    public function otp(Request $request)
-    {
+    public function otp(Request $request) {
         App::setLocale(Session::get('language'));
         if ($request->email && $request->otp) {
             Validator::make($request->all(), [
@@ -1979,33 +2070,31 @@ class FrontendController extends Controller
                     $otp->status = 1;
                     $otp->save();
                     return redirect()->route('admin')->with(['message' => 'Password changed successfully!']);
-                } else {
+                }else{
                     return view('frontend.pages.otp', compact('email'))->with(['message' => 'OTP invalid or expaired!']);
                 }
-            } else {
+            }else{
                 return view('frontend.pages.otp', compact('email'))->with(['message' => 'OTP invalid or expaired!']);
             }
-        } else {
+        }else{
             return view('frontend.pages.otp');
         }
     }
 
-    public function pages($slug)
-    {
+    public function pages($slug){
         App::setLocale(Session::get('language'));
         $content = '';
-        if ($slug == 'terms-and-conditions') {
+        if($slug == 'terms-and-conditions'){
             $content = Helper::getSettings('terms_and_conditions');
-        } else if ($slug == 'privacy-policy') {
+        }else if ($slug == 'privacy-policy') {
             $content = Helper::getSettings('privacy_policy');
-        } else if ($slug == 'return-policy') {
+        }else if ($slug == 'return-policy') {
             $content = Helper::getSettings('return_policy');
         }
         return view('frontend.pages.page', compact('slug', 'content'));
     }
 
-    public function changeLanguage(Request $request)
-    {
+    public function changeLanguage(Request $request){
 
         $language = $request->input('language');
 
@@ -2014,48 +2103,46 @@ class FrontendController extends Controller
         return true;
     }
 
-    public function Search(Request $request)
-    {
+    public function Search(Request $request){
         App::setLocale(Session::get('language'));
         $search_text = $request->search_text;
         $products = Product::where('status', 1);
         if (!empty($search_text)) {
-            $products->where(function ($query) use ($search_text) {
+            $products->where(function($query) use ($search_text){
                 $query->where('name', 'like', "%" . $search_text . "%")
-                    ->orWhere('code', 'like', "%" . $search_text . "%")
-                    ->orWhereHas('category', function ($q) use ($search_text) {
-                        $q->where('title', 'like', "%" . $search_text . "%");
-                    });
+                ->orWhere('code', 'like', "%" . $search_text . "%")
+                ->orWhereHas('category', function($q) use ($search_text) {
+                    $q->where('title', 'like', "%" . $search_text . "%");
+                });
             });
         }
         //$products = $products->get();
-        $products = $products->orderBy('short_number', 'asc')->get();
+		$products = $products->orderBy('short_number', 'asc')->get();
 
-        $parts = ProductPart::where('status', 1);
+		$parts = ProductPart::where('status', 1);
         if (!empty($search_text)) {
-            $parts->where(function ($query) use ($search_text) {
+            $parts->where(function($query) use ($search_text){
                 $query->where('name', 'like', "%" . $search_text . "%")
-                    ->orWhere('code', 'like', "%" . $search_text . "%")
-                    ->orWhereHas('brand', function ($q) use ($search_text) {
-                        $q->where('title', 'like', "%" . $search_text . "%");
-                    });
+                ->orWhere('code', 'like', "%" . $search_text . "%")
+                ->orWhereHas('brand', function($q) use ($search_text) {
+                    $q->where('title', 'like', "%" . $search_text . "%");
+                });
             });
         }
         //$products = $products->get();
-        $parts = $parts->orderBy('short_number', 'asc')->get();
+		$parts = $parts->orderBy('short_number', 'asc')->get();
 
         return view('frontend.pages.search.search', compact('search_text', 'products', 'parts'));
     }
 
-    public function Brands($brand_id)
-    {
+    public function Brands($brand_id){
         App::setLocale(Session::get('language'));
         $brand = Brand::find($brand_id);
         $products = Product::where('brand_id', $brand_id)->where('status', 1)->get();
-        return view('frontend.pages.brand-product', compact('brand', 'products'));
+        return view('frontend.pages.brand-product',compact('brand','products'));
     }
 
-    public function downloadFile($fileName)
+	public function downloadFile($fileName)
     {
         $filePath = public_path('uploads/product-custom-files/' . $fileName);
 
@@ -2071,13 +2158,12 @@ class FrontendController extends Controller
         }
     }
 
-    public function catchAll()
-    {
+    public function catchAll(){
         return view('frontend.pages.error');
     }
 
-    public function reviewUs()
-    {
+	public function reviewUs(){
         return view('frontend.pages.review-us');
     }
+
 }
