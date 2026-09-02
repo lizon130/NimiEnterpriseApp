@@ -5358,7 +5358,6 @@ return array(
     'Sabberworm\\CSS\\Parsing\\SourceException' => $vendorDir . '/sabberworm/php-css-parser/src/Parsing/SourceException.php',
     'Sabberworm\\CSS\\Parsing\\UnexpectedEOFException' => $vendorDir . '/sabberworm/php-css-parser/src/Parsing/UnexpectedEOFException.php',
     'Sabberworm\\CSS\\Parsing\\UnexpectedTokenException' => $vendorDir . '/sabberworm/php-css-parser/src/Parsing/UnexpectedTokenException.php',
-    'Sabberworm\\CSS\\PhpStan\\IgnoreBooleanAlways' => $vendorDir . '/sabberworm/php-css-parser/src/PhpStan/IgnoreBooleanAlways.php',
     'Sabberworm\\CSS\\Position\\Position' => $vendorDir . '/sabberworm/php-css-parser/src/Position/Position.php',
     'Sabberworm\\CSS\\Position\\Positionable' => $vendorDir . '/sabberworm/php-css-parser/src/Position/Positionable.php',
     'Sabberworm\\CSS\\Property\\AtRule' => $vendorDir . '/sabberworm/php-css-parser/src/Property/AtRule.php',
