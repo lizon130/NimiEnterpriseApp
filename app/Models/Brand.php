@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -18,6 +19,13 @@ class Brand extends Model
     protected static function boot()
     {
         parent::boot();
+
+        static::addGlobalScope('active', function (Builder $builder) {
+            $request = request();
+            if ($request && !$request->is('admin*') && !$request->is('api/admin*')) {
+                $builder->where('status', 1);
+            }
+        });
 
         static::creating(function ($model) {
             $model->id = substr(uniqid(), 0, 13).'-brnd-'.random_int(10000000000000000, 99999999999999999);

@@ -18,7 +18,7 @@ class ProductController extends Controller
         $limit = $request->input('limit', 12);
 
         // Fetch products with status 1 and paginate
-        $products = Product::where('status', 1)->paginate($limit);
+        $products = Product::where('status', 1)->whereActiveRelations()->paginate($limit);
 
         // Transform the products to include the full URL for the image
         $products->getCollection()->transform(function ($product) {
@@ -37,7 +37,20 @@ class ProductController extends Controller
 
     public function productDetails($slug)
     {
-        $product = Product::where('slug', $slug)->with('brand', 'category', 'sub_category', 'attributes')->first();
+        $product = Product::where('slug', $slug)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->with('brand', 'category', 'sub_category', 'attributes')
+            ->first();
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'status' => 404,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
         $product->image_full_url = asset('uploads/product-images/' . $product->thumbnail);
         $product->company = $product->company;
         $product->company->profile_image = ($product->company->profile_image) ? asset('uploads/user-images/' . $product->company->profile_image) : asset('assets/img/no-img.jpg');
@@ -60,7 +73,11 @@ class ProductController extends Controller
         $product->catalogue_file = ($product->catalogue) ? asset('uploads/catalogue-files/'.$product->catalogue->file) : null;
 
         // Related products
-        $related_products = Product::where('company_id', $product->company->id)->limit(3)->get();
+        $related_products = Product::where('company_id', $product->company->id)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->limit(3)
+            ->get();
         $related_products->transform(function ($relatedProduct) {
             $relatedProduct->image_full_url = asset('uploads/product-images/' . $relatedProduct->thumbnail);
             $relatedProduct->company = $relatedProduct->company;
@@ -70,7 +87,11 @@ class ProductController extends Controller
         $product->related_products = $related_products;
 
         // Similar category products
-        $similar_category_products = Product::where('category_id', $product->category_id)->limit(20)->get();
+        $similar_category_products = Product::where('category_id', $product->category_id)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->limit(20)
+            ->get();
         $similar_category_products->transform(function ($similarProduct) {
             $similarProduct->image_full_url = asset('uploads/product-images/' . $similarProduct->thumbnail);
             $similarProduct->company = $similarProduct->company;
@@ -87,7 +108,7 @@ class ProductController extends Controller
     }
 
     public function getRecommandProducts(Request $request){
-        $products = Product::where('status', 1)->limit(20)->get();
+        $products = Product::where('status', 1)->whereActiveRelations()->limit(20)->get();
         $products->transform(function ($product) {
             $product->image_full_url = asset('uploads/product-images/' . $product->thumbnail);
             $product->company = $product->company;

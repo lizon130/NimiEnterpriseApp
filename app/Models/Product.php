@@ -60,6 +60,29 @@ class Product extends Model
         return $this->belongsTo(Category::class, 'sub_category_id');
     }
 
+    public function scopeWhereActiveRelations($query)
+    {
+        return $query
+            ->where(function ($q) {
+                $q->whereNull('category_id')
+                  ->orWhereHas('category', function ($cq) {
+                      $cq->where('status', 1);
+                  });
+            })
+            ->where(function ($q) {
+                $q->whereNull('sub_category_id')
+                  ->orWhereHas('sub_category', function ($scq) {
+                      $scq->where('status', 1);
+                  });
+            })
+            ->where(function ($q) {
+                $q->whereNull('brand_id')
+                  ->orWhereHas('brand', function ($bq) {
+                      $bq->where('status', 1);
+                  });
+            });
+    }
+
     public function attributes(){
         return $this->hasMany(ProductAttribute::class, 'product_id')->where('type', 'attributes');
     }

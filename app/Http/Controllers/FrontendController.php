@@ -175,6 +175,7 @@ class FrontendController extends Controller
 		$products = Product::with('category')
             ->where('status', 1)
             ->where('features', 1)
+            ->whereActiveRelations()
 			->orderBy('short_number', 'asc')
             ->get();
 
@@ -250,7 +251,12 @@ class FrontendController extends Controller
 
 		if (count($subCategories) > 0) {
 			// Cache the products for the current category
-			$products = Product::where('category_id', $currentCategory->id)->orderBy('short_number', 'asc')->limit(1)->get();
+			$products = Product::where('category_id', $currentCategory->id)
+                ->where('status', 1)
+                ->whereActiveRelations()
+                ->orderBy('short_number', 'asc')
+                ->limit(1)
+                ->get();
 
 			return view('frontend.pages.subcategory', compact('currentCategory', 'subCategories', 'products'));
 		} else {
@@ -297,7 +303,11 @@ class FrontendController extends Controller
 
 
 		// Cache the products for the current category
-		$products = Product::where('category_id', $current_brand->id)->orderBy('short_number', 'asc')->get();
+		$products = Product::where('category_id', $current_brand->id)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->orderBy('short_number', 'asc')
+            ->get();
 
 		// Cache the categories
 		$categories =Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
@@ -327,7 +337,7 @@ class FrontendController extends Controller
 
     public function searchProductBycategory(Request $request){
         App::setLocale(Session::get('language'));
-        $products = Product::where('status', 1);
+        $products = Product::where('status', 1)->whereActiveRelations();
 
         if ($request->category_id) {
             $categoryId = $request->category_id;
@@ -525,7 +535,8 @@ class FrontendController extends Controller
          */
         $products = Product::query()
             ->with(['brand', 'category', 'attributes'])
-            ->where('status', 1);
+            ->where('status', 1)
+            ->whereActiveRelations();
 
         if ($isLooseMode) {
             $products->where(function ($query) {
@@ -672,6 +683,7 @@ class FrontendController extends Controller
 
         $suggestions = Product::query()
             ->where('status', 1)
+            ->whereActiveRelations()
             ->where(function ($query) use ($like) {
                 $query->whereRaw('LOWER(name) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(code) LIKE ?', [$like])
@@ -726,10 +738,17 @@ class FrontendController extends Controller
     {
         App::setLocale(Session::get('language'));
 
-        $product = Product::with(['brand', 'category', 'attributes'])->where('slug', $id)->first();
+        $product = Product::with(['brand', 'category', 'attributes'])
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->where('slug', $id)
+            ->first();
 
         if (!$product) {
-            $product = Product::with(['brand', 'category', 'attributes'])->find($id);
+            $product = Product::with(['brand', 'category', 'attributes'])
+                ->where('status', 1)
+                ->whereActiveRelations()
+                ->find($id);
         }
 
         if (!$product) {
@@ -742,6 +761,7 @@ class FrontendController extends Controller
         $releted_products = Product::where('sub_category_id', $product->sub_category_id)
             ->where('id', '!=', $product->id)
             ->where('status', 1)
+            ->whereActiveRelations()
             ->orderByRaw("CASE WHEN COALESCE(discount, 0) > 0 THEN 0 ELSE 1 END")
             ->orderBy('short_number', 'asc')
             ->get();
@@ -986,7 +1006,10 @@ class FrontendController extends Controller
         $productIds = array_keys($cartlist);
 
         // Retrieve the product models based on the cartlist product IDs
-        $products = Product::whereIn('id', $productIds)->get();
+        $products = Product::whereIn('id', $productIds)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->get();
         $parts = ProductPart::whereIn('id', $productIds)->get();
         $mergedArray = $products->concat($parts);
         // Combine the product models with their respective quantities and types
@@ -1028,7 +1051,10 @@ class FrontendController extends Controller
         $cartlist = $request->session()->get('cartlist', []);
         $productIds = array_keys($cartlist);
         // Retrieve the product models based on the cartlist product IDs
-        $products = Product::whereIn('id', $productIds)->get();
+        $products = Product::whereIn('id', $productIds)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->get();
         $parts = ProductPart::whereIn('id', $productIds)->get();
         $mergedArray = $products->concat($parts);
         // Combine the product models with their respective quantities and types
@@ -1120,7 +1146,10 @@ class FrontendController extends Controller
         $cartlist = $request->session()->get('cartlist', []);
         $productIds = array_keys($cartlist);
         // Retrieve the product models based on the cartlist product IDs
-        $products = Product::whereIn('id', $productIds)->get();
+        $products = Product::whereIn('id', $productIds)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->get();
         $parts = ProductPart::whereIn('id', $productIds)->get();
         $mergedArray = $products->concat($parts);
         // Combine the product models with their respective quantities and types
@@ -1252,7 +1281,10 @@ class FrontendController extends Controller
             $cartlist = $request->session()->get('cartlist', []);
             $productIds = array_keys($cartlist);
             // Retrieve the product models based on the cartlist product IDs
-            $products = Product::whereIn('id', $productIds)->get();
+            $products = Product::whereIn('id', $productIds)
+                ->where('status', 1)
+                ->whereActiveRelations()
+                ->get();
             $parts = ProductPart::whereIn('id', $productIds)->get();
             $mergedArray = $products->concat($parts);
             // Combine the product models with their respective quantities and types
@@ -1450,7 +1482,10 @@ class FrontendController extends Controller
         $wishlist = $request->session()->get('wishlist', []);
         $productIds = array_keys($wishlist);
         // Retrieve the product models based on the wishlist product IDs
-        $products = Product::whereIn('id', $productIds)->get();
+        $products = Product::whereIn('id', $productIds)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->get();
         $parts = ProductPart::whereIn('id', $productIds)->get();
         $mergedArray = $products->concat($parts);
         // Combine the product models with their respective quantities and types
@@ -1595,7 +1630,10 @@ class FrontendController extends Controller
 
         $productIds = array_keys($inquirylist);
 
-        $products = Product::whereIn('id', $productIds)->get();
+        $products = Product::whereIn('id', $productIds)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->get();
 
         // Combine the product models with their respective quantities
         $inquirylistItems = [];
@@ -1701,7 +1739,10 @@ class FrontendController extends Controller
 
             $inquirylist = $request->session()->get('inquirylist', []);
             $productIds = array_keys($inquirylist);
-            $products = Product::whereIn('id', $productIds)->get();
+            $products = Product::whereIn('id', $productIds)
+                ->where('status', 1)
+                ->whereActiveRelations()
+                ->get();
             $inquirylistItems = [];
             foreach ($products as $product) {
                 $productId = $product->id;
@@ -2106,7 +2147,7 @@ class FrontendController extends Controller
     public function Search(Request $request){
         App::setLocale(Session::get('language'));
         $search_text = $request->search_text;
-        $products = Product::where('status', 1);
+        $products = Product::where('status', 1)->whereActiveRelations();
         if (!empty($search_text)) {
             $products->where(function($query) use ($search_text){
                 $query->where('name', 'like', "%" . $search_text . "%")
@@ -2138,7 +2179,10 @@ class FrontendController extends Controller
     public function Brands($brand_id){
         App::setLocale(Session::get('language'));
         $brand = Brand::find($brand_id);
-        $products = Product::where('brand_id', $brand_id)->where('status', 1)->get();
+        $products = Product::where('brand_id', $brand_id)
+            ->where('status', 1)
+            ->whereActiveRelations()
+            ->get();
         return view('frontend.pages.brand-product',compact('brand','products'));
     }
 
