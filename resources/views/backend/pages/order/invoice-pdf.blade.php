@@ -31,8 +31,12 @@
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 9mm 11mm 22mm;
+            padding: 9mm 11mm 9mm;
             background: #ffffff;
+        }
+
+        .single-page {
+            position: relative;
         }
 
         /* ===== Header ===== */
@@ -116,6 +120,7 @@
             border-spacing: 6px 0;
             margin: 8px -6px 3px;
             table-layout: fixed;
+            page-break-inside: avoid;
         }
 
         .info-box {
@@ -187,6 +192,18 @@
             font-size: 9px;
         }
 
+        .items-table thead {
+            display: table-header-group;
+        }
+
+        .items-table tbody tr {
+            page-break-inside: avoid;
+        }
+
+        .items-page-break {
+            page-break-before: always;
+        }
+
         .items-table thead th {
             background: #1a1a2e;
             color: #ffffff;
@@ -244,6 +261,7 @@
         .totals-wrap {
             width: 100%;
             margin-top: 8px;
+            page-break-inside: avoid;
         }
 
         .totals-left {
@@ -294,12 +312,10 @@
         }
 
         /* ===== Signature + Footer ===== */
-        /* Signature is anchored to the bottom of the LAST page, just above the footer */
         .signature-wrap {
-            position: absolute;
-            bottom: 22mm;
-            left: 11mm;
-            width: 188mm;
+            width: 100%;
+            margin-top: 18mm;
+            page-break-inside: avoid;
         }
 
         .signature-table {
@@ -323,14 +339,45 @@
         }
 
         .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
             width: 210mm;
+            margin: 12mm -11mm 0;
             background: #1a1a2e;
             color: #ffffff;
             text-align: center;
             padding: 5px 12mm 6px;
+            page-break-inside: avoid;
+        }
+
+        .final-section {
+            position: relative;
+        }
+
+        .final-section-new-page {
+            page-break-before: avoid;
+        }
+
+        .single-page .signature-wrap {
+            position: absolute;
+            bottom: 23mm;
+            left: 0;
+            margin-top: 0;
+        }
+
+        .single-page .footer {
+            position: absolute;
+            bottom: 0;
+            left: -11mm;
+            margin: 0;
+        }
+
+        .final-section-new-page .signature-wrap {
+            position: static;
+            margin-top: 18mm;
+        }
+
+        .final-section-new-page .footer {
+            position: static;
+            margin: 12mm -11mm 0;
         }
 
         .footer .helpline {
@@ -409,7 +456,7 @@
         </button>
     </div>
 
-    <div class="page">
+    <div class="page {{ $order_details->count() <= 45 ? 'single-page' : 'multi-page' }}">
 
         {{-- Header --}}
         <table class="header-table" cellpadding="0" cellspacing="0">
@@ -487,24 +534,33 @@
         @php
             $mrpSubtotal = 0;
             $totalDiscount = 0;
+            $itemPages = $order_details->isEmpty()
+                ? collect([collect()])
+                : $order_details->chunk(45);
         @endphp
 
-        <table class="items-table" cellpadding="0" cellspacing="0">
-            <thead>
-                <tr>
-                    <th width="6%">#</th>
-                    <th width="34%" class="tl">Product</th>
-                    <th width="8%">Qty</th>
-                    <th width="13%" class="tr">MRP (Tk)</th>
-                    <th width="13%" class="tr">Discount</th>
-                    <th width="13%" class="tr">Rate (Tk)</th>
-                    <th width="13%" class="tr">Amount (Tk)</th>
-                </tr>
-            </thead>
+        @foreach ($itemPages as $pageIndex => $pageItems)
+            @if ($pageIndex > 0)
+                <div class="items-page-break"></div>
+            @endif
 
-            <tbody>
-                @forelse($order_details as $key => $item)
+            <table class="items-table" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th width="6%">#</th>
+                        <th width="34%" class="tl">Product</th>
+                        <th width="8%">Qty</th>
+                        <th width="13%" class="tr">MRP (Tk)</th>
+                        <th width="13%" class="tr">Discount</th>
+                        <th width="13%" class="tr">Rate (Tk)</th>
+                        <th width="13%" class="tr">Amount (Tk)</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                @forelse($pageItems as $pageKey => $item)
                     @php
+                        $itemNumber = ($pageIndex * 45) + $pageKey + 1;
                         $qty = (float) $item->quantity;
                         $gross = $item->unit_price * $qty;
 
@@ -534,8 +590,8 @@
                         $totalDiscount += $lineDiscount;
                     @endphp
 
-                    <tr @class(['alt' => $key % 2 == 1])>
-                        <td>{{ $key + 1 }}</td>
+                    <tr @class(['alt' => $itemNumber % 2 == 0])>
+                        <td>{{ $itemNumber }}</td>
 
                         <td class="tl">
                             {{ $item->product->name ?? 'N/A' }}
@@ -571,8 +627,11 @@
                         <td colspan="7">No items found</td>
                     </tr>
                 @endforelse
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        @endforeach
+
+        <div class="final-section {{ $order_details->count() > 45 ? 'final-section-new-page' : '' }}">
 
         {{-- Totals --}}
         @php
@@ -623,7 +682,7 @@
             </tr>
         </table>
 
-        {{-- Signatures (anchored to the bottom of the last page, right above the footer) --}}
+        {{-- Signatures and footer appear once, after the final product page. --}}
         <div class="signature-wrap">
             <table class="signature-table" cellpadding="0" cellspacing="0">
                 <tr>
@@ -637,13 +696,13 @@
             </table>
         </div>
 
-    </div>
+        <div class="footer">
+            <div class="helpline">Helpline: 01806-023460</div>
+            <div class="policy">Once medicines are sold, those won't be returned.</div>
+            <div class="thanks">Thank you for shopping with Nimi Enterprise</div>
+        </div>
 
-    {{-- Footer (repeats on every PDF page) --}}
-    <div class="footer">
-        <div class="helpline">Helpline: 01806-023460</div>
-        <div class="policy">Once medicines are sold, those won't be returned.</div>
-        <div class="thanks">Thank you for shopping with Nimi Enterprise</div>
+        </div>
     </div>
 </body>
 
