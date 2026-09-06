@@ -534,9 +534,7 @@
         @php
             $mrpSubtotal = 0;
             $totalDiscount = 0;
-            $itemPages = $order_details->isEmpty()
-                ? collect([collect()])
-                : $order_details->chunk(45);
+            $itemPages = $order_details->isEmpty() ? collect([collect()]) : $order_details->chunk(45);
         @endphp
 
         @foreach ($itemPages as $pageIndex => $pageItems)
@@ -558,149 +556,150 @@
                 </thead>
 
                 <tbody>
-                @forelse($pageItems as $pageKey => $item)
-                    @php
-                        $itemNumber = ($pageIndex * 45) + $loop->index + 1;
-                        $qty = (float) $item->quantity;
-                        $gross = $item->unit_price * $qty;
+                    @forelse($pageItems as $pageKey => $item)
+                        @php
+                            $itemNumber = $pageIndex * 45 + $loop->index + 1;
+                            $qty = (float) $item->quantity;
+                            $gross = $item->unit_price * $qty;
 
-                        $storedValue = (float) ($item->discount ?? 0);
-                        $storedType = $item->discount_type ?? '';
-                        $hasStoredDiscount = $storedValue > 0 && in_array($storedType, ['percent', 'amount']);
+                            $storedValue = (float) ($item->discount ?? 0);
+                            $storedType = $item->discount_type ?? '';
+                            $hasStoredDiscount = $storedValue > 0 && in_array($storedType, ['percent', 'amount']);
 
-                        // Legacy rows (orders placed before the fix): unit_price was saved
-                        // as the already-discounted rate while the discount was recorded
-                        // but never applied to subtotal. Detect and back-compute the MRP.
-                        $isLegacyNet = $hasStoredDiscount && abs($gross - $item->subtotal) < 0.01;
+                            // Legacy rows (orders placed before the fix): unit_price was saved
+                            // as the already-discounted rate while the discount was recorded
+                            // but never applied to subtotal. Detect and back-compute the MRP.
+                            $isLegacyNet = $hasStoredDiscount && abs($gross - $item->subtotal) < 0.01;
 
-                        if ($isLegacyNet) {
-                            $mrpUnit = $storedType == 'percent'
-                                ? $item->unit_price / max(1 - $storedValue / 100, 0.0001)
-                                : $item->unit_price + $storedValue;
-                        } else {
-                            // unit_price is the MRP, subtotal already has the discount applied
-                            $mrpUnit = $item->unit_price;
-                        }
+                            if ($isLegacyNet) {
+                                $mrpUnit =
+                                    $storedType == 'percent'
+                                        ? $item->unit_price / max(1 - $storedValue / 100, 0.0001)
+                                        : $item->unit_price + $storedValue;
+                            } else {
+                                // unit_price is the MRP, subtotal already has the discount applied
+                                $mrpUnit = $item->unit_price;
+                            }
 
-                        $lineMrpTotal = $mrpUnit * $qty;
-                        $lineDiscount = max($lineMrpTotal - $item->subtotal, 0);
-                        $netRate = $qty > 0 ? $item->subtotal / $qty : 0;
+                            $lineMrpTotal = $mrpUnit * $qty;
+                            $lineDiscount = max($lineMrpTotal - $item->subtotal, 0);
+                            $netRate = $qty > 0 ? $item->subtotal / $qty : 0;
 
-                        $mrpSubtotal += $lineMrpTotal;
-                        $totalDiscount += $lineDiscount;
-                    @endphp
+                            $mrpSubtotal += $lineMrpTotal;
+                            $totalDiscount += $lineDiscount;
+                        @endphp
 
-                    <tr @class(['alt' => $itemNumber % 2 == 0])>
-                        <td>{{ $itemNumber }}</td>
+                        <tr @class(['alt' => $itemNumber % 2 == 0])>
+                            <td>{{ $itemNumber }}</td>
 
-                        <td class="tl">
-                            {{ $item->product->name ?? 'N/A' }}
-                            @if ($item->part)
-                                <br>
-                                <span class="part-name">Part: {{ $item->part->name ?? 'N/A' }}</span>
-                            @endif
-                        </td>
-
-                        <td>{{ $item->quantity }}</td>
-
-                        <td class="tr">{{ number_format($mrpUnit, 2) }}</td>
-
-                        <td class="tr">
-                            @if ($lineDiscount > 0)
-                                @if ($item->discount_type == 'percent' && $item->discount > 0)
-                                    {{ $item->discount }}%
-                                    <span class="part-name">(Tk {{ number_format($lineDiscount, 2) }})</span>
-                                @else
-                                    {{ number_format($lineDiscount, 2) }}
+                            <td class="tl">
+                                {{ $item->product->name ?? 'N/A' }}
+                                @if ($item->part)
+                                    <br>
+                                    <span class="part-name">Part: {{ $item->part->name ?? 'N/A' }}</span>
                                 @endif
-                            @else
-                                -
-                            @endif
-                        </td>
+                            </td>
 
-                        <td class="tr">{{ number_format($netRate, 2) }}</td>
+                            <td>{{ $item->quantity }}</td>
 
-                        <td class="tr"><b>{{ number_format($item->subtotal, 2) }}</b></td>
-                    </tr>
-                @empty
-                    <tr class="empty-row">
-                        <td colspan="7">No items found</td>
-                    </tr>
-                @endforelse
+                            <td class="tr">{{ number_format($mrpUnit, 2) }}</td>
+
+                            <td class="tr">
+                                @if ($lineDiscount > 0)
+                                    @if ($item->discount_type == 'percent' && $item->discount > 0)
+                                        {{ $item->discount }}%
+                                        <span class="part-name">(Tk {{ number_format($lineDiscount, 2) }})</span>
+                                    @else
+                                        {{ number_format($lineDiscount, 2) }}
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
+
+                            <td class="tr">{{ number_format($netRate, 2) }}</td>
+
+                            <td class="tr"><b>{{ number_format($item->subtotal, 2) }}</b></td>
+                        </tr>
+                    @empty
+                        <tr class="empty-row">
+                            <td colspan="7">No items found</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         @endforeach
 
         <div class="final-section {{ $order_details->count() > 45 ? 'final-section-new-page' : '' }}">
 
-        {{-- Totals --}}
-        @php
-            // Net total after item-level discounts (e.g. 7000 - 1200 = 5800)
-            $netTotal = $mrpSubtotal - $totalDiscount;
+            {{-- Totals --}}
+            @php
+                // Net total after item-level discounts (e.g. 7000 - 1200 = 5800)
+                $netTotal = $mrpSubtotal - $totalDiscount;
 
-            // Special Discount: 1% of total value when order is 5000 or more
-            $specialDiscount = $netTotal >= 5000 ? ($netTotal * 1 / 100) : 0;
+                // Special Discount: 1% of total value when order is 5000 or more
+                $specialDiscount = $netTotal >= 5000 ? ($netTotal * 1) / 100 : 0;
 
-            // Final payable after special discount (e.g. 5800 - 58 = 5742)
-            $netPayable = $netTotal - $specialDiscount;
-        @endphp
+                // Final payable after special discount (e.g. 5800 - 58 = 5742)
+                $netPayable = $netTotal - $specialDiscount;
+            @endphp
 
-        <table class="totals-wrap" cellpadding="0" cellspacing="0">
-            <tr>
-                <td class="totals-left">
-                    <div class="totals-note">
-                        <b>Note:</b> Goods once sold will not be taken back or exchanged.<br>
-                        Please check all medicines at the time of delivery.
-                    </div>
-                </td>
-                <td>
-                    <table class="totals-table" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td class="k">Subtotal (MRP):</td>
-                            <td class="v">{{ number_format($mrpSubtotal, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="k">Total Discount:</td>
-                            <td class="v">- {{ number_format($totalDiscount, 2) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="k">Total:</td>
-                            <td class="v">{{ number_format($netTotal, 2) }}</td>
-                        </tr>
-                        @if ($specialDiscount > 0)
-                            <tr>
-                                <td class="k">Special Discount (1%):</td>
-                                <td class="v">- {{ number_format($specialDiscount, 2) }}</td>
-                            </tr>
-                        @endif
-                        <tr class="grand-row">
-                            <td class="k">NET PAYABLE:</td>
-                            <td class="v">{{ number_format($netPayable, 2) }}</td>
-                        </tr>
-                    </table>
-                </td>
-            </tr>
-        </table>
-
-        {{-- Signatures and footer appear once, after the final product page. --}}
-        <div class="signature-wrap">
-            <table class="signature-table" cellpadding="0" cellspacing="0">
+            <table class="totals-wrap" cellpadding="0" cellspacing="0">
                 <tr>
-                    <td width="50%">
-                        <div class="sign-line">Customer Signature</div>
+                    <td class="totals-left">
+                        <div class="totals-note">
+                            <b>Note:</b> Goods once sold will not be taken back or exchanged.<br>
+                            Please check all medicines at the time of delivery.
+                        </div>
                     </td>
-                    <td width="50%">
-                        <div class="sign-line">Authorized Signature</div>
+                    <td>
+                        <table class="totals-table" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="k">Subtotal (MRP):</td>
+                                <td class="v">{{ number_format($mrpSubtotal, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="k">Total Discount:</td>
+                                <td class="v">- {{ number_format($totalDiscount, 2) }}</td>
+                            </tr>
+                            <tr>
+                                <td class="k">Total:</td>
+                                <td class="v">{{ number_format($netTotal, 2) }}</td>
+                            </tr>
+                            @if ($specialDiscount > 0)
+                                <tr>
+                                    <td class="k">Special Discount (1%):</td>
+                                    <td class="v">- {{ number_format($specialDiscount, 2) }}</td>
+                                </tr>
+                            @endif
+                            <tr class="grand-row">
+                                <td class="k">NET PAYABLE:</td>
+                                <td class="v">{{ number_format($netPayable, 2) }}</td>
+                            </tr>
+                        </table>
                     </td>
                 </tr>
             </table>
-        </div>
 
-        <div class="footer">
-            <div class="helpline">Helpline: 01806-023460</div>
-            <div class="policy">Once medicines are sold, those won't be returned.</div>
-            <div class="thanks">Thank you for shopping with Nimi Enterprise</div>
-        </div>
+            {{-- Signatures and footer appear once, after the final product page. --}}
+            <div class="signature-wrap">
+                <table class="signature-table" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td width="50%">
+                            <div class="sign-line">Customer Signature</div>
+                        </td>
+                        <td width="50%">
+                            <div class="sign-line">Authorized Signature</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="footer">
+                <div class="helpline">Helpline: 01806-023460</div>
+                <div class="policy">Once medicines are sold, those won't be returned.</div>
+                <div class="thanks">Thank you for shopping with Nimi Enterprise</div>
+            </div>
 
         </div>
     </div>
