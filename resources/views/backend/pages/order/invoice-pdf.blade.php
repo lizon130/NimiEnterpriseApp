@@ -560,7 +560,7 @@
                 <tbody>
                 @forelse($pageItems as $pageKey => $item)
                     @php
-                        $itemNumber = ($pageIndex * 45) + $pageKey + 1;
+                        $itemNumber = ($pageIndex * 45) + $loop->index + 1;
                         $qty = (float) $item->quantity;
                         $gross = $item->unit_price * $qty;
 
