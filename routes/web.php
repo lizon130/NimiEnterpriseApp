@@ -120,12 +120,20 @@ Route::get('/clear-cash', function () {
     }
 });
 
+// Public frontend routes (accessible without login)
 Route::controller(FrontendController::class)->group(function () {
+    Route::get('login', 'login')->name('login');
+    Route::get('registration', 'registration');
+    Route::get('reset-password', 'forgotPassword');
+    Route::any('reset-otp-send', 'resetOtpSend');
+    Route::any('change-password', 'otp');
+});
+
+// Protected frontend routes (require login)
+Route::controller(FrontendController::class)->middleware('auth')->group(function () {
     Route::get('/', 'allProducts')->name('home');
     Route::get('/bot', 'bot')->name('bot');
     Route::get('data', 'data');
-    Route::get('login', 'login')->name('login');
-    Route::get('registration', 'registration');
     Route::get('about', 'about')->name('about-us');
     Route::get('contact', 'contact')->name('contact-us');
     Route::get('categories', 'categories')->name('categories');
@@ -204,9 +212,6 @@ Route::controller(FrontendController::class)->group(function () {
 
     Route::get('pdf', 'pdf');
     Route::get('calculator', 'calculator');
-    Route::get('reset-password', 'forgotPassword');
-    Route::any('reset-otp-send', 'resetOtpSend');
-    Route::any('change-password', 'otp');
     Route::post('contact/submit', 'contactPost');
 
     Route::get('page/{slug}', 'pages')->name('page');
