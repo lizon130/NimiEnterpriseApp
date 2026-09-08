@@ -35,6 +35,11 @@
             background: #ffffff;
         }
 
+        .page.single-page {
+            display: flex;
+            flex-direction: column;
+        }
+
         .single-page {
             position: relative;
         }
@@ -312,9 +317,19 @@
         }
 
         /* ===== Signature + Footer ===== */
+        .final-section {
+            position: relative;
+            margin-top: auto;
+            page-break-inside: avoid;
+        }
+
+        .final-section-new-page {
+            page-break-before: avoid;
+        }
+
         .signature-wrap {
             width: 100%;
-            margin-top: 18mm;
+            margin-top: 12mm;
             page-break-inside: avoid;
         }
 
@@ -340,44 +355,12 @@
 
         .footer {
             width: 210mm;
-            margin: 12mm -11mm 0;
+            margin: 10mm -11mm 0;
             background: #1a1a2e;
             color: #ffffff;
             text-align: center;
             padding: 5px 12mm 6px;
             page-break-inside: avoid;
-        }
-
-        .final-section {
-            position: relative;
-        }
-
-        .final-section-new-page {
-            page-break-before: avoid;
-        }
-
-        .single-page .signature-wrap {
-            position: absolute;
-            bottom: 23mm;
-            left: 0;
-            margin-top: 0;
-        }
-
-        .single-page .footer {
-            position: absolute;
-            bottom: 0;
-            left: -11mm;
-            margin: 0;
-        }
-
-        .final-section-new-page .signature-wrap {
-            position: static;
-            margin-top: 18mm;
-        }
-
-        .final-section-new-page .footer {
-            position: static;
-            margin: 12mm -11mm 0;
         }
 
         .footer .helpline {
