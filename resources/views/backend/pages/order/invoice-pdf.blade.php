@@ -319,7 +319,6 @@
         /* ===== Signature + Footer ===== */
         .final-section {
             position: relative;
-            margin-top: auto;
             page-break-inside: avoid;
         }
 
@@ -327,10 +326,20 @@
             page-break-before: avoid;
         }
 
+        .page.single-page .final-section {
+            display: flex;
+            flex-direction: column;
+            flex: 1 0 auto;
+        }
+
         .signature-wrap {
             width: 100%;
             margin-top: 12mm;
             page-break-inside: avoid;
+        }
+
+        .page.single-page .signature-wrap {
+            margin-top: auto;
         }
 
         .signature-table {
