@@ -8,7 +8,8 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 0;
+            /* Keep a small safe gap on every printed/PDF page, including page 2+. */
+            margin: 5.5mm 7mm 6mm;
         }
 
         * {
@@ -23,43 +24,41 @@
         body {
             background: #ffffff;
             font-family: Arial, Helvetica, sans-serif;
-            color: #333;
-            font-size: 11px;
+            color: #111111;
+            font-size: 9px;
+            line-height: 1.22;
         }
 
         .page {
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 9mm 11mm 9mm;
+            padding: 5.5mm 7mm 6mm;
             background: #ffffff;
         }
 
-        .page.single-page {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .single-page {
-            position: relative;
-        }
-
-        /* ===== Header ===== */
-        .header-table {
+        /* ===== Extra Compact Top Header ===== */
+        .top-header {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            border-bottom: 2px solid #1a1a2e;
-            padding-bottom: 4px;
+            border-bottom: 0;
+            margin-bottom: 1px;
         }
 
-        .header-table td {
-            vertical-align: middle;
-            padding-bottom: 4px;
+        .top-header td {
+            vertical-align: top;
+            padding: 0 0 2px 0;
         }
 
         .brand-cell {
-            width: 55%;
+            width: 68%;
+            text-align: left;
+        }
+
+        .invoice-cell {
+            width: 32%;
+            text-align: right;
         }
 
         .brand-table {
@@ -71,326 +70,271 @@
             padding: 0;
         }
 
-        .brand-table .logo-box img {
-            width: 44px;
-            height: auto;
+        .logo-cell {
+            width: 31px;
+        }
+
+        .logo-cell img {
+            max-width: 45px;
+            max-height: 45px;
             display: block;
         }
 
-        .brand-table .logo-box .logo-fallback {
-            width: 44px;
-            height: 32px;
-            background: #e9ecef;
-            border: 1px dashed #ccc;
+        .logo-fallback {
+            width: 31px;
+            height: 27px;
+            border: 1px solid #cccccc;
             text-align: center;
-            line-height: 32px;
-            font-size: 8px;
-            color: #999;
+            line-height: 25px;
+            color: #999999;
+            font-size: 7px;
         }
 
-        .brand-table .name-box {
-            padding-left: 9px;
+        .brand-text-cell {
+            padding-left: 7px !important;
         }
 
         .company-name {
             font-size: 14px;
             font-weight: bold;
-            color: #1a1a2e;
-            line-height: 1.25;
+            color: #222222;
+            line-height: 1.05;
         }
 
-        .company-sub {
-            font-size: 8.5px;
-            color: #777;
-            letter-spacing: 0.3px;
+        .company-sub,
+        .company-phone {
+            font-size: 9px;
+            color: #333333;
+            line-height: 1.15;
         }
 
-        .title-cell {
-            width: 45%;
-            text-align: right;
-        }
-
-        .doc-title {
-            font-size: 22px;
+        .invoice-title {
+            font-size: 10px;
+            line-height: 1.05;
             font-weight: bold;
-            color: #1a1a2e;
-            letter-spacing: 3px;
-            line-height: 1.1;
-        }
-
-        /* ===== Bill To + Meta ===== */
-        .info-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 6px 0;
-            margin: 8px -6px 3px;
-            table-layout: fixed;
-            page-break-inside: avoid;
-        }
-
-        .info-box {
-            background: #f8f9fa;
-            border: 1px solid #e3e6ea;
-            border-radius: 4px;
-            padding: 6px 10px;
-            vertical-align: top;
-        }
-
-        .info-box-title {
-            font-size: 9.5px;
-            font-weight: bold;
+            color: #111111;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #1a1a2e;
-            border-bottom: 1px solid #d8dce2;
-            padding-bottom: 3px;
-            margin-bottom: 4px;
+            letter-spacing: 0.4px;
         }
 
-        .info-line {
-            font-size: 9.5px;
-            color: #444;
-            line-height: 1.5;
+        .invoice-date {
+            margin-top: 2px;
+            font-size: 8.4px;
+            color: #222222;
+            line-height: 1.2;
         }
 
-        .info-label {
-            font-weight: bold;
-            color: #333;
-            display: inline-block;
-            width: 64px;
-        }
-
-        .meta-table {
+        .invoice-id-row {
             width: 100%;
             border-collapse: collapse;
+            margin: 1px 0 2px;
+            font-size: 8.2px;
         }
 
-        .meta-table td {
-            font-size: 9.5px;
+        .invoice-id-row td {
             padding: 0;
-            color: #444;
+            vertical-align: middle;
         }
 
-        .meta-table .k {
-            color: #777;
-            width: 90px;
+        .invoice-id-left {
+            text-align: left;
+            width: 62%;
         }
 
-        .meta-table .v {
+        .invoice-id-right {
+            text-align: right;
+            width: 38%;
+        }
+
+        .strong {
             font-weight: bold;
-            color: #1a1a2e;
         }
 
-        .paid {
-            color: #198754;
-        }
-
-        .pending {
-            color: #dc3545;
-        }
-
-        /* ===== Items ===== */
+        /* ===== Item Table ===== */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 8px;
-            font-size: 9px;
+            table-layout: fixed;
+            font-size: 8.4px;
         }
 
         .items-table thead {
             display: table-header-group;
         }
 
-        .items-table tbody tr {
-            page-break-inside: avoid;
+        .items-table tfoot {
+            display: table-row-group;
         }
 
-        .items-page-break {
-            page-break-before: always;
-        }
-
-        .items-table thead th {
-            background: #1a1a2e;
-            color: #ffffff;
-            padding: 4px 5px;
-            text-align: center;
-            border: 1px solid #1a1a2e;
-            font-size: 8.5px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        .items-table thead th.tl {
-            text-align: left;
-        }
-
-        .items-table thead th.tr {
-            text-align: right;
-        }
-
-        .items-table tbody td {
-            padding: 3px 5px;
-            text-align: center;
-            border: 1px solid #dfe3e8;
+        .items-table th,
+        .items-table td {
+            border: 1px solid #333333;
+            padding: 2.2px 3px;
             vertical-align: middle;
-            font-size: 9px;
-            line-height: 1.3;
         }
 
-        .items-table tbody td.tl {
+        .items-table th {
+            text-align: center;
+            font-weight: bold;
+            background: #f2f2f2;
+            color: #111111;
+            line-height: 1.12;
+            font-size: 8.4px;
+        }
+
+        .items-table tbody tr,
+        .items-table tfoot tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .items-table td {
+            line-height: 1.18;
+        }
+
+        .sl-col {
+            width: 5.5%;
+            text-align: center;
+        }
+
+        .product-col {
+            width: 45.5%;
             text-align: left;
         }
 
-        .items-table tbody td.tr {
+        .mrp-col {
+            width: 10%;
             text-align: right;
         }
 
-        .items-table tbody tr.alt {
-            background: #f8f9fa;
+        .qty-col {
+            width: 6.5%;
+            text-align: center;
+        }
+
+        .value-col,
+        .disc-col,
+        .net-col {
+            width: 10.833%;
+            text-align: right;
+        }
+
+        .product-name {
+            font-weight: normal;
+            font-size: 9.2px;
+            line-height: 1.15;
+            word-break: break-word;
         }
 
         .part-name {
-            color: #888;
+            color: #444444;
+            font-size: 7.2px;
+            line-height: 1.05;
+        }
+
+        .total-row td {
+            font-weight: bold;
+            background: #f7f7f7;
             font-size: 8.5px;
         }
 
         .empty-row td {
             text-align: center;
-            padding: 12px 5px;
-            color: #999;
+            padding: 8px 4px;
+            color: #777777;
             font-style: italic;
         }
 
-        /* ===== Totals ===== */
-        .totals-wrap {
+        /* ===== Bottom Details + Totals ===== */
+        .bottom-wrap {
             width: 100%;
-            margin-top: 8px;
-            page-break-inside: avoid;
-        }
-
-        .totals-left {
-            font-size: 8.5px;
-            color: #777;
-            vertical-align: top;
-            padding-top: 2px;
-        }
-
-        .totals-note {
-            border-left: 2px solid #d8dce2;
-            padding-left: 8px;
-            line-height: 1.45;
-        }
-
-        .totals-table {
-            width: 78mm;
+            margin-top: 4px;
             border-collapse: collapse;
-            margin-left: auto;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
-        .totals-table td {
-            padding: 4px 7px;
+        .bottom-left {
+            width: 59%;
+            vertical-align: top;
+            padding-right: 5mm;
+        }
+
+        .bottom-right {
+            width: 41%;
+            vertical-align: top;
+        }
+
+        .section-title {
             font-size: 9.5px;
-            border: 1px solid #dfe3e8;
+            font-weight: bold;
+            margin-bottom: 2px;
         }
 
-        .totals-table .k {
-            color: #555;
+        .delivery-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.2px;
         }
 
-        .totals-table .v {
+        .delivery-table td {
+            padding: 0.5px 0;
+            vertical-align: top;
+            line-height: 1.22;
+        }
+
+        .delivery-label {
+            width: 25mm;
+            font-weight: bold;
+        }
+
+        .amount-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8.3px;
+        }
+
+        .amount-table td {
+            padding: 0.7px 0;
+            line-height: 1.25;
+            vertical-align: top;
+        }
+
+        .amount-label {
+            text-align: right;
+            padding-right: 6px !important;
+            font-weight: bold;
+        }
+
+        .amount-value {
+            width: 26mm;
             text-align: right;
             font-weight: bold;
-            color: #1a1a2e;
         }
 
-        .grand-row td {
-            background: #1a1a2e !important;
-            color: #ffffff !important;
-            border-color: #1a1a2e !important;
-            font-size: 11px !important;
-            padding: 6px !important;
+        .amount-separator td {
+            border-top: 1px solid #333333;
+            padding-top: 3px !important;
         }
 
-        .grand-row .k {
-            color: #ffffff !important;
-        }
-
-        /* ===== Signature + Footer ===== */
-        .final-section {
-            position: relative;
-            page-break-inside: avoid;
-        }
-
-        .final-section-new-page {
-            page-break-before: avoid;
-        }
-
-        .page.single-page .final-section {
-            display: flex;
-            flex-direction: column;
-            flex: 1 0 auto;
-        }
-
-        .signature-wrap {
-            width: 100%;
-            margin-top: 12mm;
-            page-break-inside: avoid;
-        }
-
-        .page.single-page .signature-wrap {
-            margin-top: auto;
-        }
-
-        .signature-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-        }
-
-        .signature-table td {
-            font-size: 8.5px;
-            color: #555;
-            text-align: center;
-            vertical-align: bottom;
-        }
-
-        .sign-line {
-            border-top: 1px solid #999;
-            width: 55mm;
-            margin: 0 auto 3px;
-            padding-top: 3px;
-        }
-
-        .footer {
-            width: 210mm;
-            margin: 10mm -11mm 0;
-            background: #1a1a2e;
-            color: #ffffff;
-            text-align: center;
-            padding: 5px 12mm 6px;
-            page-break-inside: avoid;
-        }
-
-        .footer .helpline {
-            font-size: 9.5px;
+        .net-payable-row td {
+            font-size: 9.3px;
             font-weight: bold;
-            letter-spacing: 0.4px;
         }
 
-        .footer .policy {
-            font-size: 8.5px;
-            color: #c9ccd6;
-            margin-top: 1px;
+        .terms {
+            margin-top: 2.5mm;
+            font-size: 7.8px;
+            line-height: 1.25;
+            color: #222222;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
-        .footer .thanks {
-            font-size: 9px;
-            color: #ffffff;
-            margin-top: 2px;
+        .terms div {
+            margin-bottom: 0.5px;
         }
 
-        /* ===== Screen / Print helpers ===== */
         .no-print {
             display: block;
         }
@@ -434,8 +378,39 @@
             }
 
             .page {
+                /* Print/PDF page margin is handled by @page so continuation pages also get top gap. */
+                width: auto;
+                min-height: auto;
+                padding: 0;
                 box-shadow: none;
                 margin: 0;
+            }
+
+            .top-header {
+                page-break-inside: avoid;
+                break-inside: avoid;
+                page-break-after: avoid;
+            }
+
+            .items-table {
+                page-break-before: auto;
+            }
+
+            .items-table thead {
+                display: table-header-group;
+            }
+
+            .items-table tbody {
+                display: table-row-group;
+            }
+
+            .items-table tfoot {
+                display: table-row-group;
+            }
+
+            .items-table tr {
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
         }
     </style>
@@ -448,251 +423,194 @@
         </button>
     </div>
 
-    <div class="page {{ $order_details->count() <= 45 ? 'single-page' : 'multi-page' }}">
+    @php
+        $mrpSubtotal = 0;
+        $totalDiscount = 0;
+        $totalQty = 0;
+    @endphp
 
-        {{-- Header --}}
-        <table class="header-table" cellpadding="0" cellspacing="0">
+    <div class="page">
+        <table class="top-header" cellpadding="0" cellspacing="0">
             <tr>
                 <td class="brand-cell">
                     <table class="brand-table" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td class="logo-box">
+                            <td class="logo-cell">
                                 @if (!empty($logoBase64))
                                     <img src="{{ $logoBase64 }}" alt="Logo">
                                 @else
-                                    <div class="logo-fallback">LOGO</div>
+                                    <div class="logo-fallback">Logo</div>
                                 @endif
                             </td>
-                            <td class="name-box">
+                            <td class="brand-text-cell">
                                 <div class="company-name">Nimi Enterprise</div>
                                 <div class="company-sub">Medicine &amp; Healthcare Supplier</div>
+                                <div class="company-phone">Phone: {{ $companyPhone ?? '01806-023460' }}</div>
                             </td>
                         </tr>
                     </table>
                 </td>
-                <td class="title-cell">
-                    <div class="doc-title">INVOICE</div>
-                </td>
-            </tr>
-        </table>
-
-        {{-- Bill To + Invoice Meta --}}
-        <table class="info-table" cellpadding="0" cellspacing="0">
-            <tr>
-                <td class="info-box" width="55%">
-                    <div class="info-box-title">Bill To</div>
-                    <div class="info-line">
-                        <span class="info-label">Company:</span> {{ $billing->company ?? 'N/A' }}<br>
-                        <span class="info-label">Name:</span> {{ $billing->name ?? 'N/A' }}<br>
-                        <span class="info-label">Phone:</span> {{ $billing->phone ?? 'N/A' }}<br>
-                        @if (!empty($billing->email))
-                            <span class="info-label">Email:</span> {{ $billing->email }}<br>
-                        @endif
-                        <span class="info-label">Address:</span> {{ $billing->address ?? 'N/A' }}
-                        @if (!empty($billing->city))
-                            , {{ $billing->city }}
-                        @endif
+                <td class="invoice-cell">
+                    <div class="invoice-title">Invoice: {{ $order->invoice_no }}</div>
+                    <div class="invoice-date">
+                        <span class="strong">Date:</span>
+                        {{ !empty($order->date) ? date('d/m/Y h:i A', strtotime($order->date)) : date('d/m/Y h:i A') }}
                     </div>
                 </td>
-                <td class="info-box" width="45%">
-                    <div class="info-box-title">Invoice Details</div>
-                    <table class="meta-table" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td class="k">Invoice No:</td>
-                            <td class="v">{{ $order->invoice_no }}</td>
-                        </tr>
-                        <tr>
-                            <td class="k">Date:</td>
-                            <td class="v">{{ date('d M Y', strtotime($order->date)) }}</td>
-                        </tr>
-                        <tr>
-                            <td class="k">Payment:</td>
-                            <td class="v {{ $order->payment_status == 1 ? 'paid' : 'pending' }}">
-                                {{ $order->payment_status == 1 ? 'Paid' : 'Pending' }}
-                            </td>
-                        </tr>
-                        @if (!empty($order->payment_method))
-                            <tr>
-                                <td class="k">Method:</td>
-                                <td class="v">{{ ucfirst($order->payment_method) }}</td>
-                            </tr>
-                        @endif
-                    </table>
-                </td>
             </tr>
         </table>
 
-        {{-- Items --}}
-        @php
-            $mrpSubtotal = 0;
-            $totalDiscount = 0;
-            $itemPages = $order_details->isEmpty() ? collect([collect()]) : $order_details->chunk(45);
-        @endphp
+        <table class="items-table" cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th class="sl-col">Sl.</th>
+                    <th class="product-col">Product</th>
+                    <th class="mrp-col">MRP</th>
+                    <th class="qty-col">Qty</th>
+                    <th class="value-col">Total Value</th>
+                    <th class="disc-col">Total Disc.</th>
+                    <th class="net-col">Net Pay</th>
+                </tr>
+            </thead>
 
-        @foreach ($itemPages as $pageIndex => $pageItems)
-            @if ($pageIndex > 0)
-                <div class="items-page-break"></div>
-            @endif
+            <tbody>
+                @forelse($order_details as $key => $item)
+                    @php
+                        $qty = (float) ($item->quantity ?? 0);
+                        $gross = (float) ($item->unit_price ?? 0) * $qty;
 
-            <table class="items-table" cellpadding="0" cellspacing="0">
-                <thead>
+                        $storedValue = (float) ($item->discount ?? 0);
+                        $storedType = $item->discount_type ?? '';
+                        $hasStoredDiscount = $storedValue > 0 && in_array($storedType, ['percent', 'amount']);
+
+                        // Legacy rows: unit_price was saved as discounted rate while discount was recorded separately.
+                        $isLegacyNet = $hasStoredDiscount && abs($gross - (float) ($item->subtotal ?? 0)) < 0.01;
+
+                        if ($isLegacyNet) {
+                            $mrpUnit =
+                                $storedType == 'percent'
+                                    ? (float) ($item->unit_price ?? 0) / max(1 - $storedValue / 100, 0.0001)
+                                    : (float) ($item->unit_price ?? 0) + $storedValue;
+                        } else {
+                            $mrpUnit = (float) ($item->unit_price ?? 0);
+                        }
+
+                        $lineMrpTotal = $mrpUnit * $qty;
+                        $lineSubtotal = (float) ($item->subtotal ?? 0);
+                        $lineDiscount = max($lineMrpTotal - $lineSubtotal, 0);
+
+                        $mrpSubtotal += $lineMrpTotal;
+                        $totalDiscount += $lineDiscount;
+                        $totalQty += $qty;
+                    @endphp
+
                     <tr>
-                        <th width="6%">#</th>
-                        <th width="34%" class="tl">Product</th>
-                        <th width="8%">Qty</th>
-                        <th width="13%" class="tr">MRP (Tk)</th>
-                        <th width="13%" class="tr">Discount</th>
-                        <th width="13%" class="tr">Rate (Tk)</th>
-                        <th width="13%" class="tr">Amount (Tk)</th>
+                        <td class="sl-col">{{ $key + 1 }}</td>
+                        <td class="product-col">
+                            @if (!empty($item->product->category->title))
+                                <span class="product-category fw-bold">{{ $item->product->category->title }}:</span>
+                            @endif
+                            <span class="product-name">{{ $item->product->name ?? 'N/A' }}</span>
+                            @if ($item->part)
+                                <br>
+                                <span class="part-name">{{ $item->part->name ?? 'N/A' }}</span>
+                            @endif
+                        </td>
+                        <td class="mrp-col">{{ number_format($mrpUnit, 2) }}</td>
+                        <td class="qty-col">{{ number_format($qty, $qty == floor($qty) ? 0 : 2) }}</td>
+                        <td class="value-col">{{ number_format($lineMrpTotal, 2) }}</td>
+                        <td class="disc-col">{{ number_format($lineDiscount, 2) }}</td>
+                        <td class="net-col">{{ number_format($lineSubtotal, 2) }}</td>
                     </tr>
-                </thead>
+                @empty
+                    <tr class="empty-row">
+                        <td colspan="7">No items found</td>
+                    </tr>
+                @endforelse
+            </tbody>
 
-                <tbody>
-                    @forelse($pageItems as $pageKey => $item)
-                        @php
-                            $itemNumber = $pageIndex * 45 + $loop->index + 1;
-                            $qty = (float) $item->quantity;
-                            $gross = $item->unit_price * $qty;
-
-                            $storedValue = (float) ($item->discount ?? 0);
-                            $storedType = $item->discount_type ?? '';
-                            $hasStoredDiscount = $storedValue > 0 && in_array($storedType, ['percent', 'amount']);
-
-                            // Legacy rows (orders placed before the fix): unit_price was saved
-                            // as the already-discounted rate while the discount was recorded
-                            // but never applied to subtotal. Detect and back-compute the MRP.
-                            $isLegacyNet = $hasStoredDiscount && abs($gross - $item->subtotal) < 0.01;
-
-                            if ($isLegacyNet) {
-                                $mrpUnit =
-                                    $storedType == 'percent'
-                                        ? $item->unit_price / max(1 - $storedValue / 100, 0.0001)
-                                        : $item->unit_price + $storedValue;
-                            } else {
-                                // unit_price is the MRP, subtotal already has the discount applied
-                                $mrpUnit = $item->unit_price;
-                            }
-
-                            $lineMrpTotal = $mrpUnit * $qty;
-                            $lineDiscount = max($lineMrpTotal - $item->subtotal, 0);
-                            $netRate = $qty > 0 ? $item->subtotal / $qty : 0;
-
-                            $mrpSubtotal += $lineMrpTotal;
-                            $totalDiscount += $lineDiscount;
-                        @endphp
-
-                        <tr @class(['alt' => $itemNumber % 2 == 0])>
-                            <td>{{ $itemNumber }}</td>
-
-                            <td class="tl">
-                                {{ $item->product->name ?? 'N/A' }}
-                                @if ($item->part)
-                                    <br>
-                                    <span class="part-name">Part: {{ $item->part->name ?? 'N/A' }}</span>
-                                @endif
-                            </td>
-
-                            <td>{{ $item->quantity }}</td>
-
-                            <td class="tr">{{ number_format($mrpUnit, 2) }}</td>
-
-                            <td class="tr">
-                                @if ($lineDiscount > 0)
-                                    @if ($item->discount_type == 'percent' && $item->discount > 0)
-                                        {{ $item->discount }}%
-                                        <span class="part-name">(Tk {{ number_format($lineDiscount, 2) }})</span>
-                                    @else
-                                        {{ number_format($lineDiscount, 2) }}
-                                    @endif
-                                @else
-                                    -
-                                @endif
-                            </td>
-
-                            <td class="tr">{{ number_format($netRate, 2) }}</td>
-
-                            <td class="tr"><b>{{ number_format($item->subtotal, 2) }}</b></td>
-                        </tr>
-                    @empty
-                        <tr class="empty-row">
-                            <td colspan="7">No items found</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        @endforeach
-
-        <div class="final-section {{ $order_details->count() > 45 ? 'final-section-new-page' : '' }}">
-
-            {{-- Totals --}}
             @php
-                // Net total after item-level discounts (e.g. 7000 - 1200 = 5800)
                 $netTotal = $mrpSubtotal - $totalDiscount;
-
-                // Special Discount: 1% of total value when order is 5000 or more
                 $specialDiscount = $netTotal >= 5000 ? ($netTotal * 1) / 100 : 0;
-
-                // Final payable after special discount (e.g. 5800 - 58 = 5742)
                 $netPayable = $netTotal - $specialDiscount;
             @endphp
 
-            <table class="totals-wrap" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td class="totals-left">
-                        <div class="totals-note">
-                            <b>Note:</b> Goods once sold will not be taken back or exchanged.<br>
-                            Please check all medicines at the time of delivery.
-                        </div>
-                    </td>
-                    <td>
-                        <table class="totals-table" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="k">Subtotal (MRP):</td>
-                                <td class="v">{{ number_format($mrpSubtotal, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <td class="k">Total Discount:</td>
-                                <td class="v">- {{ number_format($totalDiscount, 2) }}</td>
-                            </tr>
-                            <tr>
-                                <td class="k">Total:</td>
-                                <td class="v">{{ number_format($netTotal, 2) }}</td>
-                            </tr>
-                            @if ($specialDiscount > 0)
-                                <tr>
-                                    <td class="k">Special Discount (1%):</td>
-                                    <td class="v">- {{ number_format($specialDiscount, 2) }}</td>
-                                </tr>
-                            @endif
-                            <tr class="grand-row">
-                                <td class="k">NET PAYABLE:</td>
-                                <td class="v">{{ number_format($netPayable, 2) }}</td>
-                            </tr>
-                        </table>
-                    </td>
+            <tfoot>
+                <tr class="total-row">
+                    <td class="sl-col"></td>
+                    <td class="product-col">Total</td>
+                    <td class="mrp-col"></td>
+                    <td class="qty-col">{{ number_format($totalQty, $totalQty == floor($totalQty) ? 0 : 2) }}</td>
+                    <td class="value-col">{{ number_format($mrpSubtotal, 2) }}</td>
+                    <td class="disc-col">{{ number_format($totalDiscount, 2) }}</td>
+                    <td class="net-col">{{ number_format($netTotal, 2) }}</td>
                 </tr>
-            </table>
+            </tfoot>
+        </table>
 
-            {{-- Signatures and footer appear once, after the final product page. --}}
-            <div class="signature-wrap">
-                <table class="signature-table" cellpadding="0" cellspacing="0">
-                    <tr>
-                        <td width="50%">
-                            <div class="sign-line">Customer Signature</div>
-                        </td>
-                        <td width="50%">
-                            <div class="sign-line">Authorized Signature</div>
-                        </td>
-                    </tr>
-                </table>
-            </div>
+        <table class="bottom-wrap" cellpadding="0" cellspacing="0">
+            <tr>
+                <td class="bottom-left">
+                    <div class="section-title">Delivery Details</div>
+                    <table class="delivery-table" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="delivery-label">Customer Name:</td>
+                            <td>{{ $billing->name ?? 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="delivery-label">Phone:</td>
+                            <td>{{ $billing->phone ?? 'N/A' }}</td>
+                        </tr>
+                        @if (!empty($billing->email))
+                            <tr>
+                                <td class="delivery-label">Email:</td>
+                                <td>{{ $billing->email }}</td>
+                            </tr>
+                        @endif
+                        <tr>
+                            <td class="delivery-label">Address:</td>
+                            <td>
+                                {{ $billing->address ?? 'N/A' }}
+                                @if (!empty($billing->city))
+                                    , {{ $billing->city }}
+                                @endif
+                            </td>
+                        </tr>
+                    </table>
+                </td>
 
-            <div class="footer">
-                <div class="helpline">Helpline: 01806-023460</div>
-                <div class="policy">Once medicines are sold, those won't be returned.</div>
-                <div class="thanks">Thank you for shopping with Nimi Enterprise</div>
-            </div>
+                <td class="bottom-right">
+                    <table class="amount-table" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td class="amount-label">Total Value :</td>
+                            <td class="amount-value">{{ number_format($mrpSubtotal, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="amount-label">Discount :</td>
+                            <td class="amount-value">{{ number_format($totalDiscount, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="amount-label">Total :</td>
+                            <td class="amount-value">{{ number_format($netTotal, 2) }}</td>
+                        </tr>
+                        @if ($specialDiscount > 0)
+                            <tr>
+                                <td class="amount-label">Special Dis.(1%) :</td>
+                                <td class="amount-value">{{ number_format($specialDiscount, 2) }}</td>
+                            </tr>
+                        @endif
+                        <tr class="amount-separator net-payable-row">
+                            <td class="amount-label">Net Payable :</td>
+                            <td class="amount-value">{{ number_format($netPayable, 2) }}</td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
 
+        <div class="terms">
+            <div>1. Goods once sold will not be taken back or exchanged.</div>
+            <div>2. Please check all medicines/products at the time of delivery.</div>
         </div>
     </div>
 </body>
