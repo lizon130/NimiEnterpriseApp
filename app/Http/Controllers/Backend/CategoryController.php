@@ -105,8 +105,10 @@ class CategoryController extends Controller
 
     public function store(Request $request){
         $validator = $request->validate([
-			'title' => 'required',
+			'title' => 'required|unique:category,title',
             'image' => 'nullable|image:png,jpg,jpeg,gif,webp,',
+		], [
+			'title.unique' => 'A category with this name already exists.',
 		]);
 
         $category = new Category();
@@ -145,8 +147,10 @@ class CategoryController extends Controller
 
     public function update(Request $request, $id){
         $validator = $request->validate([
-			'title' => 'required',
+			'title' => 'required|unique:category,title,' . $id,
             'image' => 'nullable|image:png,jpg,jpeg,gif,webp,',
+		], [
+			'title.unique' => 'A category with this name already exists.',
 		]);
 
         $category = Category::find($id);

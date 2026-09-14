@@ -24,8 +24,7 @@ class LoginController extends Controller
 			'first_name' => 'required',
 			'last_name' => 'required',
 			'name' => 'required',
-			'email' => 'required|email|unique:user',
-			'email' => 'required|unique:user',
+			'email' => 'required|email|unique:user,email',
 			'password' => 'required|min:8|confirmed',
 			'password_confirmation' => 'required',
 			'address' => 'required',
@@ -33,6 +32,9 @@ class LoginController extends Controller
 			'city' => 'required',
 			'state' => 'required',
 			'country' => 'required',
+		], [
+			'email.unique' => 'An account with this email already exists. Please use a different email or log in instead.',
+			'email.email' => 'Please enter a valid email address.',
 		]);
 
         if ($validator->fails()) {

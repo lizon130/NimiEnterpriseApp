@@ -36,12 +36,13 @@ class OrderController extends Controller
         });
     }
 
-    public function index(){
+    public function index()
+    {
         $category = Category::all();
         $brands = Brand::all();
         $partners = Company::all();
         $products = Product::all();
-        return view('backend.pages.order.index', compact('category','brands','partners', 'products'));
+        return view('backend.pages.order.index', compact('category', 'brands', 'partners', 'products'));
     }
 
     public function view($id)
@@ -57,7 +58,8 @@ class OrderController extends Controller
         return view('backend.pages.order.view', compact('order', 'order_details', 'billing'));
     }
 
-    public function getList(Request $request){
+    public function getList(Request $request)
+    {
 
         $data = Order::query()->with(['details.product', 'details.part']);
 
@@ -74,14 +76,14 @@ class OrderController extends Controller
         }
 
         if (!empty($request->status)) {
-            $data->where(function($query) use ($request){
+            $data->where(function ($query) use ($request) {
                 if ($request->status == 1) {
                     $status = 1;
-                }else if($request->status == 2){
+                } else if ($request->status == 2) {
                     $status = 2;
-                }else if($request->status == 3){
+                } else if ($request->status == 3) {
                     $status = 3;
-                }else{
+                } else {
                     $status = 0;
                 }
                 $query->where('status', $status);
@@ -89,95 +91,98 @@ class OrderController extends Controller
         }
 
         return Datatables::of($data)
-        ->editColumn('invoice_no', function ($row) {
-            return '<strong>#' . $row->invoice_no . '</strong>';
-        })
-        ->editColumn('user_id', function ($row) {
-            return optional($row->company)->first_name ?? '-' .' '. optional($row->company)->last_name ?? '-';
-        })
-        ->editColumn('products', function ($row) {
-            if ($row->details->isEmpty()) {
-                return '<span class="text-muted">-</span>';
-            }
+            ->editColumn('invoice_no', function ($row) {
+                return '<strong>#' . $row->invoice_no . '</strong>';
+            })
+            ->editColumn('user_id', function ($row) {
+                return optional($row->company)->first_name ?? '-' . ' ' . optional($row->company)->last_name ?? '-';
+            })
+            ->editColumn('products', function ($row) {
+                if ($row->details->isEmpty()) {
+                    return '<span class="text-muted">-</span>';
+                }
 
-            $count = $row->details->count();
-            $collapsed = $count > 2;
+                $count = $row->details->count();
+                $collapsed = $count > 2;
 
-            $items = '';
-            foreach ($row->details as $i => $item) {
-                $name = $item->product->name ?? $item->part->name ?? 'N/A';
-                $part = $item->part
-                    ? '<small class="text-muted d-block text-truncate">Part: ' . e($item->part->name ?? 'N/A') . '</small>'
-                    : '';
-                $extra = ($collapsed && $i >= 2) ? ' extra-item d-none' : '';
+                $items = '';
+                foreach ($row->details as $i => $item) {
+                    $name = $item->product->name ?? $item->part->name ?? 'N/A';
+                    $part = $item->part
+                        ? '<small class="text-muted d-block text-truncate">Part: ' . e($item->part->name ?? 'N/A') . '</small>'
+                        : '';
+                    $extra = ($collapsed && $i >= 2) ? ' extra-item d-none' : '';
 
-                $items .= '<div class="order-item' . $extra . '">'
-                    . '<div class="d-flex justify-content-between align-items-start gap-2">'
-                    . '<div class="order-item-name"><span class="d-block text-truncate" title="' . e($name) . '">' . e($name) . '</span>' . $part . '</div>'
-                    . '<span class="badge bg-secondary flex-shrink-0">× ' . (int) $item->quantity . '</span>'
-                    . '</div></div>';
-            }
+                    $items .= '<div class="order-item' . $extra . '">'
+                        . '<div class="d-flex justify-content-between align-items-start gap-2">'
+                        . '<div class="order-item-name"><span class="d-block text-truncate" title="' . e($name) . '">' . e($name) . '</span>' . $part . '</div>'
+                        . '<span class="badge bg-secondary flex-shrink-0">× ' . (int) $item->quantity . '</span>'
+                        . '</div></div>';
+                }
 
-            $html = '<div class="order-products">';
-            $html .= '<span class="badge bg-light text-dark border mb-1"><i class="fa-solid fa-box-open"></i> ' . $count . ' item' . ($count > 1 ? 's' : '') . '</span>';
-            $html .= $items;
-            if ($collapsed) {
-                $html .= '<a href="javascript:void(0)" class="toggle-items small fw-bold d-block mt-1">+ ' . ($count - 2) . ' more</a>';
-            }
-            $html .= '</div>';
+                $html = '<div class="order-products">';
+                $html .= '<span class="badge bg-light text-dark border mb-1"><i class="fa-solid fa-box-open"></i> ' . $count . ' item' . ($count > 1 ? 's' : '') . '</span>';
+                $html .= $items;
+                if ($collapsed) {
+                    $html .= '<a href="javascript:void(0)" class="toggle-items small fw-bold d-block mt-1">+ ' . ($count - 2) . ' more</a>';
+                }
+                $html .= '</div>';
 
-            return $html;
-        })
-        ->editColumn('date', function ($row) {
-            return date('d M Y', strtotime($row->date));
-        })
-        ->editColumn('status', function ($row) {
-            if ($row->status == 0) {
-                return '<span class="badge bg-warning w-80">New</span>';
-            }elseif ($row->status == 1) {
-                return '<span class="badge bg-info w-80">Shipping</span>';
-            }elseif ($row->status == 2) {
-                return '<span class="badge bg-success w-80">Delivered</span>';
-            }else{
-                return '<span class="badge bg-danger w-80">Rejected</span>';
-            }
-        })
-        ->addColumn('action', function ($row) {
-            if ($this->user->role === 4 || $this->user->role === 5) {
-                // For roles 4 and 5, show only view button
-                return '<a href="" data-id="'.$row->id.'" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i> View</a>';
-            }
+                return $html;
+            })
+            ->editColumn('date', function ($row) {
+                return date('d M Y', strtotime($row->date));
+            })
+            ->editColumn('status', function ($row) {
+                if ($row->status == 0) {
+                    return '<span class="badge bg-warning w-80">New</span>';
+                } elseif ($row->status == 1) {
+                    return '<span class="badge bg-info w-80">Shipping</span>';
+                } elseif ($row->status == 2) {
+                    return '<span class="badge bg-success w-80">Delivered</span>';
+                } else {
+                    return '<span class="badge bg-danger w-80">Rejected</span>';
+                }
+            })
+            ->addColumn('action', function ($row) {
+                if ($this->user->role === 4 || $this->user->role === 5) {
+                    // For roles 4 and 5, show only view button
+                    return '<a href="" data-id="' . $row->id . '" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i> View</a>';
+                }
 
-            $btn = '';
-            $btn = $btn . '<a href="" data-id="'.$row->id.'" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i></a>';
+                $btn = '';
+                $btn = $btn . '<a href="" data-id="' . $row->id . '" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i></a>';
 
-            // Add Invoice Button
-            $btn = $btn . '<a href="'.route('admin.order.invoice', $row->id).'" class="btn btn-sm btn-success text-light mx-1" target="_blank"><i class="fa-solid fa-file-invoice"></i></a>';
+                // Add Invoice Button
+                $btn = $btn . '<a href="' . route('admin.order.invoice', $row->id) . '" class="btn btn-sm btn-success text-light mx-1" target="_blank"><i class="fa-solid fa-file-invoice"></i></a>';
 
-            if (Helper::hasRight('order.edit')) {
-                $btn = $btn . '<a href="" data-id="'.$row->id.'" class="status_change_btn btn btn-sm btn-warning text-light mx-1"><i class="fa-solid fa-truck"></i></a>';
-                $btn = $btn . '<a href="" data-id="'.$row->id.'" class="edit_btn btn btn-sm btn-primary mx-1"><i class="fa-solid fa-pencil"></i></a>';
-            }
-            if (Helper::hasRight('order.delete')) {
-                $btn = $btn . '<a class="delete_btn btn btn-sm btn-danger" data-id="'.$row->id.'" href=""><i class="fa fa-trash" aria-hidden="true"></i></a>';
-            }
-            return $btn;
-        })
-        ->rawColumns(['invoice_no','user_id','products','status','action'])->make(true);
+                if (Helper::hasRight('order.edit')) {
+                    $btn = $btn . '<a href="" data-id="' . $row->id . '" class="status_change_btn btn btn-sm btn-warning text-light mx-1"><i class="fa-solid fa-truck"></i></a>';
+                    $btn = $btn . '<a href="" data-id="' . $row->id . '" class="edit_btn btn btn-sm btn-primary mx-1"><i class="fa-solid fa-pencil"></i></a>';
+                }
+                if (Helper::hasRight('order.delete')) {
+                    $btn = $btn . '<a class="delete_btn btn btn-sm btn-danger" data-id="' . $row->id . '" href=""><i class="fa fa-trash" aria-hidden="true"></i></a>';
+                }
+                return $btn;
+            })
+            ->rawColumns(['invoice_no', 'user_id', 'products', 'status', 'action'])->make(true);
     }
 
-    public function row($number){
+    public function row($number)
+    {
         $products = Product::all();
         $number++;
-        return view('backend.pages.order.row', compact('products','number'));
+        return view('backend.pages.order.row', compact('products', 'number'));
     }
 
-    public function getCompany($user_id){
+    public function getCompany($user_id)
+    {
         $company = Company::where('user_id', $user_id)->first();
         return json_encode($company);
     }
 
-    public function getProduct(Request $request){
+    public function getProduct(Request $request)
+    {
         $product = Product::find($request->product_id);
         if (!$product) {
             return response()->json(['error' => 'Product not found'], 404);
@@ -193,7 +198,8 @@ class OrderController extends Controller
         return json_encode($product);
     }
 
-    public function store(Request $request){
+    public function store(Request $request)
+    {
 
         $validator = $request->validate([
             'user_id' => 'required',
@@ -233,8 +239,8 @@ class OrderController extends Controller
         if ($order->save()) {
             $order->refresh();
 
-            for ($i=0; $i < count($request->product); $i++) {
-                if(!empty($request->product[$i])){
+            for ($i = 0; $i < count($request->product); $i++) {
+                if (!empty($request->product[$i])) {
                     $order_detail = new OrderDetail();
                     $order_detail->order_id  = $order->id;
                     $order_detail->product_id = $request->product[$i];
@@ -251,7 +257,7 @@ class OrderController extends Controller
                 'type' => 'success',
                 'message' => 'Order created successfully.',
             ]);
-        }else{
+        } else {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Something went wrong.',
@@ -259,15 +265,17 @@ class OrderController extends Controller
         }
     }
 
-    public function edit($order_id){
+    public function edit($order_id)
+    {
         $order = Order::find($order_id);
         $products = Product::where('status', 1)->get();
         $partners = Company::all();
         $billing = json_decode($order->billing_information);
-        return view('backend.pages.order.edit', compact('order','products','partners','billing'));
+        return view('backend.pages.order.edit', compact('order', 'products', 'partners', 'billing'));
     }
 
-    public function update(Request $request, $id){
+    public function update(Request $request, $id)
+    {
         $validator = $request->validate([
             'user_id' => 'required',
             'company' => 'required',
@@ -307,8 +315,8 @@ class OrderController extends Controller
         if ($order->save()) {
             OrderDetail::where('order_id', $id)->delete();
 
-            for ($i=0; $i < count($request->product); $i++) {
-                if(!empty($request->product[$i])){
+            for ($i = 0; $i < count($request->product); $i++) {
+                if (!empty($request->product[$i])) {
                     $order_detail = new OrderDetail();
                     $order_detail->order_id  = $order->id;
                     $order_detail->product_id = $request->product[$i];
@@ -325,7 +333,7 @@ class OrderController extends Controller
                 'type' => 'success',
                 'message' => 'Order updated successfully.',
             ]);
-        }else{
+        } else {
             return response()->json([
                 'type' => 'error',
                 'message' => 'Something went wrong.',
@@ -333,22 +341,24 @@ class OrderController extends Controller
         }
     }
 
-    public function delete($id){
+    public function delete($id)
+    {
         $order = Order::find($id);
-        if($order->delete()){
+        if ($order->delete()) {
             $details = OrderDetail::where('order_id', $id)->delete();
             return json_encode(['success' => 'Order deleted successfully.']);
-        }else{
+        } else {
             return json_encode(['error' => 'Order not found.']);
         }
     }
 
-    public function editStaus($order_id){
+    public function editStaus($order_id)
+    {
         $order = Order::find($order_id);
         $products = Product::where('status', 1)->get();
         $partners = Company::all();
         $billing = json_decode($order->billing_information);
-        return view('backend.pages.order.status', compact('order','products','partners','billing'));
+        return view('backend.pages.order.status', compact('order', 'products', 'partners', 'billing'));
     }
 
     public function updateStatus(Request $request, $id)
@@ -404,8 +414,7 @@ class OrderController extends Controller
                         }
                     }
                 }
-            }
-            elseif ($oldStatus == 2 && $newStatus != 2) {
+            } elseif ($oldStatus == 2 && $newStatus != 2) {
                 $orderDetails = OrderDetail::where('order_id', $order->id)->get();
 
                 foreach ($orderDetails as $item) {
@@ -435,7 +444,6 @@ class OrderController extends Controller
                 'type' => 'success',
                 'message' => 'Order status updated successfully.'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -446,7 +454,7 @@ class OrderController extends Controller
         }
     }
 
-      /**
+    /**
      * Generate Invoice
      */
     public function invoice($id)
@@ -466,8 +474,8 @@ class OrderController extends Controller
     }
 
     /**
-    * Generate PDF Invoice
-    */
+     * Generate PDF Invoice
+     */
     public function invoicePdf($id)
     {
         $order = Order::find($id);
@@ -499,7 +507,7 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
+        $order_details = OrderDetail::where('order_id', $id)->with('product.category', 'part')->get();
         $billing = json_decode($order->billing_information);
 
         // total_price already includes item discounts (net payable) - no extra discount applied
@@ -508,55 +516,56 @@ class OrderController extends Controller
         return view('backend.pages.order.invoice-pdf', compact('order', 'order_details', 'billing', 'logoBase64'));
     }
 
-   private function getLogoBase64()
-{
-    $possiblePaths = [
-        // Your live server public root
-        '/home/nimiente/public_html/assets/img/Logo.png',
-        '/home/nimiente/public_html/assets/img/logo.png',
-        '/home/nimiente/public_html/assets/img/LOGO.png',
+    private function getLogoBase64()
+    {
+        $possiblePaths = [
+            // Your live server public root
+            '/home/nimiente/public_html/assets/img/Logo.png',
+            '/home/nimiente/public_html/assets/img/logo.png',
+            '/home/nimiente/public_html/assets/img/LOGO.png',
 
-        // If logo is inside uploaded/storage folder
-        '/home/nimiente/public_html/storage/images/Logo.png',
-        '/home/nimiente/public_html/storage/images/logo.png',
+            // If logo is inside uploaded/storage folder
+            '/home/nimiente/public_html/storage/images/Logo.png',
+            '/home/nimiente/public_html/storage/images/logo.png',
 
-        // If project has public folder locally/server
-        base_path('public/assets/img/Logo.png'),
-        base_path('public/assets/img/logo.png'),
+            // If project has public folder locally/server
+            base_path('public/assets/img/Logo.png'),
+            base_path('public/assets/img/logo.png'),
 
-        // If public folder is one level outside Laravel app
-        base_path('../assets/img/Logo.png'),
-        base_path('../assets/img/logo.png'),
+            // If public folder is one level outside Laravel app
+            base_path('../assets/img/Logo.png'),
+            base_path('../assets/img/logo.png'),
 
-        // Laravel public_path fallback
-        public_path('assets/img/Logo.png'),
-        public_path('assets/img/logo.png'),
-    ];
+            // Laravel public_path fallback
+            public_path('assets/img/Logo.png'),
+            public_path('assets/img/logo.png'),
+        ];
 
-    foreach ($possiblePaths as $logoPath) {
-        try {
-            if (!empty($logoPath) && file_exists($logoPath) && is_readable($logoPath)) {
-                $imageData = file_get_contents($logoPath);
+        foreach ($possiblePaths as $logoPath) {
+            try {
+                if (!empty($logoPath) && file_exists($logoPath) && is_readable($logoPath)) {
+                    $imageData = file_get_contents($logoPath);
 
-                if ($imageData !== false) {
-                    $extension = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+                    if ($imageData !== false) {
+                        $extension = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
 
-                    $mimeType = match ($extension) {
-                        'jpg', 'jpeg' => 'image/jpeg',
-                        'png' => 'image/png',
-                        'gif' => 'image/gif',
-                        'webp' => 'image/webp',
-                        default => 'image/png',
-                    };
+                        $mimeType = match ($extension) {
+                            'jpg', 'jpeg' => 'image/jpeg',
+                            'png' => 'image/png',
+                            'gif' => 'image/gif',
+                            'webp' => 'image/webp',
+                            default => 'image/png',
+                        };
 
-                    return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                        return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
+                    }
                 }
+            } catch (\Throwable $e) {
+                continue;
             }
-        } catch (\Throwable $e) {
-            continue;
         }
-    }
 
-    return null;
+        return null;
+    }
 }
-}
+

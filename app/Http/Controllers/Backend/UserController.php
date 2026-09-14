@@ -96,9 +96,12 @@ class UserController extends Controller
         $validator = $request->validate([
 			'first_name' => 'required',
 			'last_name' => 'required',
-			'email' => 'required|email|unique:user',
-			'phone' => 'required|unique:user',
+			'email' => 'required|email|unique:user,email',
+			'phone' => 'required|unique:user,phone',
 			'role' => 'required',
+		], [
+			'email.unique' => 'An account with this email already exists.',
+			'phone.unique' => 'This phone number is already in use.',
 		]);
 
         $user = new User();
@@ -125,9 +128,12 @@ class UserController extends Controller
         $validator = $request->validate([
 			'first_name' => 'required',
 			'last_name' => 'required',
-			'email' => 'required|email',
-			'phone' => 'required',
+			'email' => 'required|email|unique:user,email,' . $id,
+			'phone' => 'required|unique:user,phone,' . $id,
 			'role' => 'required',
+		], [
+			'email.unique' => 'An account with this email already exists.',
+			'phone.unique' => 'This phone number is already in use.',
 		]);
 
         $user = User::find($id);
