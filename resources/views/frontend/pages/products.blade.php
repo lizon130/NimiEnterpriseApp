@@ -620,6 +620,350 @@
             }
         }
 
+        /* ===== Brand strip between product rows ===== */
+        .brand-strip-wrap {
+            grid-column: 1 / -1;
+            margin: 6px 0 12px;
+        }
+
+        #productListing.list-view-active .brand-strip-wrap {
+            display: none;
+        }
+
+        .brand-strip {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: var(--shadow-sm);
+            padding: 12px 0 10px;
+            opacity: 0;
+            transform: translateY(26px);
+            transition: opacity .55s ease, transform .55s cubic-bezier(.16, 1, .3, 1);
+        }
+
+        .brand-strip.is-visible {
+            opacity: 1;
+            transform: none;
+        }
+
+        .bs-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 16px 9px;
+            color: var(--muted);
+            font-size: clamp(10.5px, 2.6vw, 12.5px);
+            font-weight: 700;
+            letter-spacing: .09em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .bs-head i {
+            color: var(--pr);
+            font-size: 1em;
+        }
+
+        .bs-head span {
+            margin-right: auto;
+        }
+
+        .bs-see-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 0;
+            border: none;
+            background: transparent;
+            color: var(--pr);
+            font-size: inherit;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: none;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: opacity .15s ease;
+        }
+
+        .bs-see-all i {
+            font-size: .72em;
+            transition: transform .15s ease;
+        }
+
+        .bs-see-all:hover {
+            opacity: .75;
+        }
+
+        .bs-see-all:hover i {
+            transform: translateX(2px);
+        }
+
+        .bs-marquee {
+            overflow: hidden;
+        }
+
+        .bs-track {
+            display: flex;
+            width: max-content;
+            animation: bsScroll var(--bs-duration, 26s) linear infinite;
+            will-change: transform;
+        }
+
+        @keyframes bsScroll {
+            from {
+                transform: translateX(-50%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .bs-set {
+            display: flex;
+            gap: 12px;
+            padding-right: 12px;
+        }
+
+        .bs-logo {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: clamp(86px, 23vw, 190px);
+            height: clamp(46px, 10.5vw, 66px);
+            padding: 7px 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .bs-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .bs-marquee:hover .bs-track,
+        .bs-marquee:active .bs-track {
+            animation-play-state: paused;
+        }
+
+        @media (max-width: 767px) {
+            .brand-strip-wrap {
+                margin: 4px 0 10px;
+            }
+
+            .brand-strip {
+                border-radius: 13px;
+                padding: 10px 0 8px;
+            }
+
+            .bs-head {
+                padding: 0 12px 7px;
+            }
+
+            .bs-set {
+                gap: 9px;
+                padding-right: 9px;
+            }
+
+            .bs-logo {
+                width: clamp(78px, 25vw, 120px);
+                height: clamp(42px, 9.5vw, 54px);
+                padding: 6px 9px;
+                border-radius: 10px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .brand-strip {
+                opacity: 1;
+                transform: none;
+                transition: none;
+            }
+
+            .bs-track {
+                animation: none;
+            }
+        }
+
+        /* ===== All brands modal ===== */
+        #allBrandsModal .modal-dialog {
+            max-width: 720px;
+        }
+
+        #allBrandsModal .modal-content {
+            border: none;
+            border-radius: 18px;
+            overflow: hidden;
+            max-height: 86vh;
+        }
+
+        #allBrandsModal .modal-header {
+            border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+            align-items: center;
+        }
+
+        #allBrandsModal .modal-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        #allBrandsModal .btn-close {
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        #allBrandsModal .modal-title i {
+            color: var(--pr);
+        }
+
+        #allBrandsModal .ab-count {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted, #6b7280);
+        }
+
+        #allBrandsModal .modal-body {
+            padding: 18px 20px 22px;
+        }
+
+        .all-brands-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .ab-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 8px 11px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: border-color .15s ease, box-shadow .15s ease;
+        }
+
+        .ab-card:hover {
+            border-color: var(--pr-lt, var(--pr));
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ab-logo {
+            width: 100%;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ab-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .ab-initial {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: color-mix(in srgb, var(--pr) 10%, #fff);
+            color: var(--pr);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .ab-name {
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.3;
+            color: var(--muted, #6b7280);
+            text-align: center;
+            word-break: break-word;
+        }
+
+        @media (max-width: 767px) {
+            #allBrandsModal .modal-dialog {
+                margin: 12px;
+            }
+
+            #allBrandsModal .modal-content {
+                max-height: 82vh;
+                border-radius: 14px;
+            }
+
+            #allBrandsModal .modal-header {
+                padding: 10px 12px 10px 14px;
+            }
+
+            #allBrandsModal .modal-title {
+                font-size: 14px;
+                gap: 6px;
+            }
+
+            #allBrandsModal .ab-count {
+                font-size: 11.5px;
+            }
+
+            #allBrandsModal .modal-body {
+                padding: 11px 12px 13px;
+                overflow-y: auto;
+            }
+
+            .all-brands-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .ab-card {
+                padding: 9px 5px 8px;
+                gap: 5px;
+                border-radius: 11px;
+            }
+
+            .ab-logo {
+                height: 32px;
+            }
+
+            .ab-initial {
+                width: 30px;
+                height: 30px;
+                font-size: 14px;
+            }
+
+            .ab-name {
+                font-size: 11px;
+                line-height: 1.25;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .all-brands-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .ab-name {
+                font-size: 10.5px;
+            }
+        }
+
         .infinite-end {
             display: none;
             align-items: center;
@@ -1465,6 +1809,30 @@
     </div>
 
     @push('footer')
+        @php
+            /* Prepared in PHP: multiline expressions inside @json() break Blade's compiler. */
+$brandStripPool = $brands
+    ->filter(function ($b) {
+        return $b->image;
+    })
+    ->map(function ($b) {
+        return [
+            'title' => $b->title,
+            'image' => asset('uploads/brand-images/' . $b->image),
+        ];
+    })
+    ->values();
+
+$brandStripAll = $brands
+    ->map(function ($b) {
+        return [
+            'id' => $b->id,
+            'title' => $b->title,
+            'image' => $b->image ? asset('uploads/brand-images/' . $b->image) : null,
+                    ];
+                })
+                ->values();
+        @endphp
         <script>
             (function($) {
                 'use strict';
@@ -1474,6 +1842,15 @@
                 const NO_RESULT = @json(trans('language.no_product_found'));
                 const CSRF_TOKEN = $('meta[name="csrf-token"]').attr('content');
                 const STATE_KEY = 'nimi_products_infinite_state_v2';
+
+                /*
+                 * Brand strip: after every N products in the grid, inject a floating
+                 * brand logo carousel (4 logos side by side, seamless left-to-right marquee).
+                 */
+                const BRAND_STRIP_EVERY = 20;
+                const BRAND_STRIP_HEADING = @json(trans('language.brands'));
+                const BRAND_STRIP_POOL = @json($brandStripPool);
+                const BRAND_STRIP_ALL = @json($brandStripAll);
 
                 let currentCategory = @json(optional($current_category)->id ?? '');
                 let isListView = false;
@@ -1682,6 +2059,228 @@
                     }
                 }
 
+                /* ===== Brand strip injection ===== */
+
+                const stripObserver = 'IntersectionObserver' in window ?
+                    new IntersectionObserver(function(entries) {
+                        entries.forEach(function(entry) {
+                            if (entry.isIntersecting) {
+                                $(entry.target).addClass('is-visible');
+                                stripObserver.unobserve(entry.target);
+                            }
+                        });
+                    }, {
+                        threshold: 0.15,
+                        rootMargin: '0px 0px -6% 0px'
+                    }) :
+                    null;
+
+                function pickStripBrands(pos) {
+                    if (!BRAND_STRIP_POOL.length) return [];
+
+                    const count = Math.min(4, BRAND_STRIP_POOL.length);
+                    const start = ((pos - 1) * count) % BRAND_STRIP_POOL.length;
+                    const picked = [];
+
+                    for (let i = 0; i < count; i++) {
+                        picked.push(BRAND_STRIP_POOL[(start + i) % BRAND_STRIP_POOL.length]);
+                    }
+
+                    return picked;
+                }
+
+                function buildBrandStrip(pos) {
+                    const logos = pickStripBrands(pos);
+                    const setHtml = logos.map(function(b) {
+                        return '<div class="bs-logo" title="' + escapeHtml(b.title) + '">' +
+                            '<img src="' + escapeHtml(b.image) + '" alt="' + escapeHtml(b.title) +
+                            '" loading="lazy" draggable="false">' +
+                            '</div>';
+                    }).join('');
+
+                    const duration = Math.max(16, logos.length * 6);
+
+                    const $wrap = $(
+                        '<div class="brand-strip-wrap" data-pos="' + pos + '" role="presentation">' +
+                        '<div class="brand-strip">' +
+                        '<div class="bs-head"><i class="fa-solid fa-tag"></i><span>' +
+                        escapeHtml(BRAND_STRIP_HEADING) +
+                        '</span>' +
+                        '<button type="button" class="bs-see-all">See all <i class="fa-solid fa-chevron-right"></i></button>' +
+                        '</div>' +
+                        '<div class="bs-marquee">' +
+                        '<div class="bs-track" style="--bs-duration:' + duration + 's">' +
+                        '<div class="bs-set">' + setHtml + '</div>' +
+                        '<div class="bs-set" aria-hidden="true">' + setHtml + '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>'
+                    );
+
+                    const strip = $wrap.find('.brand-strip')[0];
+                    if (stripObserver) {
+                        stripObserver.observe(strip);
+                    } else {
+                        $wrap.find('.brand-strip').addClass('is-visible');
+                    }
+
+                    return $wrap;
+                }
+
+                function injectBrandStrips() {
+                    if (!BRAND_STRIP_POOL.length) return;
+
+                    const $grid = $('#productListing .products-grid');
+                    if (!$grid.length) return;
+
+                    const items = $grid.children('[role="listitem"]');
+
+                    /* Drop strips whose anchor products are gone (grid was replaced). */
+                    $grid.children('.brand-strip-wrap').each(function() {
+                        const pos = Number($(this).attr('data-pos') || 0);
+                        if (pos < 1 || pos * BRAND_STRIP_EVERY > items.length) {
+                            $(this).remove();
+                        }
+                    });
+
+                    for (let pos = 1; pos * BRAND_STRIP_EVERY <= items.length; pos++) {
+                        const anchor = items.eq(pos * BRAND_STRIP_EVERY - 1);
+                        const next = anchor.next('.brand-strip-wrap');
+
+                        if (next.length && next.attr('data-pos') == pos) continue;
+
+                        let $wrap = $grid.children('.brand-strip-wrap[data-pos="' + pos + '"]');
+                        $wrap = $wrap.length ? $wrap : buildBrandStrip(pos);
+                        $wrap.insertAfter(anchor);
+                    }
+                }
+
+                /* ===== "See all" brands modal ===== */
+
+                function ensureAllBrandsModal() {
+                    if ($('#allBrandsModal').length) return;
+
+                    const cards = BRAND_STRIP_ALL.map(function(b) {
+                        const logo = b.image ?
+                            '<img src="' + escapeHtml(b.image) + '" alt="' + escapeHtml(b.title) +
+                            '" loading="lazy">' :
+                            '<div class="ab-initial">' + escapeHtml(String(b.title || '?').charAt(0)
+                                .toUpperCase()) + '</div>';
+
+                        return '<div class="ab-card" role="button" tabindex="0" data-brand-id="' + escapeHtml(
+                                String(b.id)) +
+                            '" title="' + escapeHtml(b.title) + '">' +
+                            '<div class="ab-logo">' + logo + '</div>' +
+                            '<div class="ab-name">' + escapeHtml(b.title) + '</div>' +
+                            '</div>';
+                    }).join('');
+
+                    const $modal = $(
+                        '<div class="modal fade" id="allBrandsModal" tabindex="-1" aria-hidden="true">' +
+                        '<div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">' +
+                        '<div class="modal-content">' +
+                        '<div class="modal-header">' +
+                        '<h5 class="modal-title"><i class="fa-solid fa-tag"></i>' + escapeHtml(BRAND_STRIP_HEADING) +
+                        '<span class="ab-count">(' + BRAND_STRIP_ALL.length + ')</span></h5>' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+                        '</div>' +
+                        '<div class="modal-body"><div class="all-brands-grid">' + cards + '</div></div>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>'
+                    );
+
+                    $('body').append($modal);
+                }
+
+                $(document).on('click', '.bs-see-all', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    ensureAllBrandsModal();
+
+                    const el = document.getElementById('allBrandsModal');
+                    if (window.bootstrap && bootstrap.Modal) {
+                        bootstrap.Modal.getOrCreateInstance(el).show();
+                    }
+                });
+
+                /* Clicking a brand card filters the listing by that brand. */
+                function applyBrandFilter(id) {
+                    /* Brand filters only work in "all" mode — switch out of loose mode first. */
+                    if (listState.mode === 'loose') {
+                        listState.mode = 'all';
+                        listState.looseCat = '';
+                        currentCategory = '';
+                        $('#products-page').removeClass('loose-mode');
+                        $('#modeAllBtn').addClass('active');
+                        $('#modeLooseBtn').removeClass('active');
+                        $('#looseChips .loose-chip').removeClass('active').first().addClass('active');
+                    }
+
+                    /* Single-brand selection: clear other brands, tick this one. */
+                    let $target = null;
+                    $('.brands_for_filter').each(function() {
+                        const match = String($(this).val()) === id;
+                        $(this).prop('checked', match);
+                        if (match && !$target) $target = $(this);
+                    });
+
+                    if (!$target) return;
+
+                    syncDuplicateFilter($target);
+                    updateFilterUI();
+
+                    reloadListing();
+
+                    /* Bring the filtered results into view (below sticky header). */
+                    const anchor = $('.listing-header').length ? $('.listing-header') : $('#productListing');
+                    const targetTop = Math.max(0, anchor.offset().top - 84);
+
+                    $('html, body').stop(true).animate({
+                        scrollTop: targetTop
+                    }, 300);
+                }
+
+                $(document).on('click', '.ab-card[data-brand-id]', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const id = String($(this).attr('data-brand-id') || '');
+                    if (!id) return;
+
+                    let applied = false;
+
+                    const apply = function() {
+                        if (applied) return;
+                        applied = true;
+                        applyBrandFilter(id);
+                    };
+
+                    const modalEl = document.getElementById('allBrandsModal');
+
+                    if (modalEl && window.bootstrap && bootstrap.Modal) {
+                        const instance = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+                        /* Wait until the modal finished closing (body scroll unlocks then). */
+                        $(modalEl).on('hidden.bs.modal', apply);
+                        instance.hide();
+
+                        /* Safety net if the modal was already closed. */
+                        setTimeout(apply, 450);
+                    } else {
+                        apply();
+                    }
+                });
+
+                $(document).on('keydown', '.ab-card[data-brand-id]', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        $(this).trigger('click');
+                    }
+                });
+
                 function fetchPage(page, append, perPageOverride) {
                     if (append && page > listState.lastPage) {
                         return $.Deferred().resolve().promise();
@@ -1768,6 +2367,8 @@
                              * to fill even one viewport.
                              */
                             requestAnimationFrame(function() {
+                                injectBrandStrips();
+
                                 const pageTooShort = document.documentElement.scrollHeight <= window
                                     .innerHeight + 120;
 
@@ -2017,7 +2618,7 @@
                         .removeClass('d-none')
                         .html(
                             '<div class="ps-loading"><span class="spinner-border spinner-border-sm"></span> Searching...</div>'
-                            );
+                        );
 
                     suggestXhr = $.get(SUGGEST_URL, {
                             q: query

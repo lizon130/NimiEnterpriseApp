@@ -176,7 +176,25 @@ class ProductController extends Controller
     {
 
         $validator = $request->validate([
-            'name' => 'required',
+            'name' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request) {
+                    $duplicate = Product::where('name', trim($value))
+                        ->where('category_id', $request->category)
+                        ->when(empty($request->brand), function ($query) {
+                            $query->where(function ($q) {
+                                $q->whereNull('brand_id')->orWhere('brand_id', '')->orWhere('brand_id', 0);
+                            });
+                        }, function ($query) use ($request) {
+                            $query->where('brand_id', $request->brand);
+                        })
+                        ->exists();
+
+                    if ($duplicate) {
+                        $fail('A product with this name already exists in the selected category and brand.');
+                    }
+                },
+            ],
             'code' => 'required',
             'category' => 'required',
             'thumbnail' => 'required|image:png,jpg,jpeg,gif,webp,',
@@ -274,7 +292,26 @@ class ProductController extends Controller
     {
 
         $validator = $request->validate([
-            'name' => 'required',
+            'name' => [
+                'required',
+                function ($attribute, $value, $fail) use ($request, $id) {
+                    $duplicate = Product::where('name', trim($value))
+                        ->where('category_id', $request->category)
+                        ->when(empty($request->brand), function ($query) {
+                            $query->where(function ($q) {
+                                $q->whereNull('brand_id')->orWhere('brand_id', '')->orWhere('brand_id', 0);
+                            });
+                        }, function ($query) use ($request) {
+                            $query->where('brand_id', $request->brand);
+                        })
+                        ->where('id', '!=', $id)
+                        ->exists();
+
+                    if ($duplicate) {
+                        $fail('A product with this name already exists in the selected category and brand.');
+                    }
+                },
+            ],
             'code' => 'required',
             'category' => 'required',
             'thumbnail' => 'nullable|image:png,jpg,jpeg,gif,webp,',

@@ -88,10 +88,13 @@ class PartnerController extends Controller
             'first_name' => 'required',
             'last_name' => 'required',
             'name' => 'required',
+            'email' => 'required|email|unique:user,email',
             'password' => 'nullable|min:8|confirmed',
             'password_confirmation' => 'nullable',
             'address' => 'required',
             'image' => 'nullable|image:png,jpg,jpeg,gif,webp,',
+        ], [
+            'email.unique' => 'An account with this email already exists. Please use a different email.',
         ]);
 
         $user = new User();
@@ -156,10 +159,21 @@ class PartnerController extends Controller
     }
 
     public function update(Request $request, $id){
+        /* Find the partner's user first so the unique email check can ignore it. */
+        $company = Company::find($id);
+        $partnerUser = $company ? User::find($company->user_id) : null;
+
         $validator = $request->validate([
             'first_name' => 'required',
             'last_name' => 'required',
             'name' => 'required',
+            'email' => [
+                'required',
+                'email',
+                $partnerUser
+                    ? 'unique:user,email,' . $partnerUser->id
+                    : 'unique:user,email',
+            ],
             'password' => 'nullable|min:8|confirmed',
             'password_confirmation' => 'nullable',
             'address' => 'required',
@@ -168,9 +182,16 @@ class PartnerController extends Controller
             'state' => 'required',
             'country' => 'required',
             'image' => 'nullable|image:png,jpg,jpeg,gif,webp,',
+        ], [
+            'email.unique' => 'An account with this email already exists. Please use a different email.',
         ]);
 
-        $company = Company::find($id);
+        if (!$company) {
+            return response()->json([
+                'type' => 'error',
+                'message' => 'Partner not found.',
+            ]);
+        }
         $company->type = $request->type;
         $company->contact_name = $request->first_name.' '.$request->last_name;
         $company->name = $request->name;

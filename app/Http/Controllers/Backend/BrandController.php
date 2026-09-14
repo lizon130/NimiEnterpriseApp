@@ -66,8 +66,10 @@ class BrandController extends Controller
 
     public function store(Request $request){
         $validator = $request->validate([
-			'title' => 'required',
+			'title' => 'required|unique:brand,title',
             'image' => 'nullable|image:png,jpg,jpeg,gif,webp,',
+		], [
+			'title.unique' => 'A brand with this name already exists.',
 		]);
 
         $brand = new Brand();
@@ -99,8 +101,10 @@ class BrandController extends Controller
 
     public function update(Request $request, $id){
         $validator = $request->validate([
-			'title' => 'required',
+			'title' => 'required|unique:brand,title,' . $id,
             'image' => 'nullable|image:png,jpg,jpeg,gif,webp,',
+		], [
+			'title.unique' => 'A brand with this name already exists.',
 		]);
 
         $brand = Brand::find($id);
