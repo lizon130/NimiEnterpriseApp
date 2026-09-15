@@ -66,12 +66,14 @@
                     #dataTable .order-item + .order-item { margin-top: 4px; }
                     #dataTable .order-item-name { min-width: 0; font-size: 0.875rem; }
                     #dataTable .toggle-items { text-decoration: none; }
+                    #dataTable .order-partner { min-width: 140px; max-width: 200px; }
+                    #dataTable .order-partner small { margin-top: 1px; display: inline-block; }
                 </style>
                 <table class="table table-bordered" id="dataTable">
                     <thead>
                         <tr>
                             <th>Order Date</th>
-                            <th>Partner Name</th>
+                            <th>Company</th>
                             <th>Products</th>
                             <th>Price</th>
                             <th>Status</th>

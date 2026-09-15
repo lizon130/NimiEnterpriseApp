@@ -61,7 +61,7 @@ class OrderController extends Controller
     public function getList(Request $request)
     {
 
-        $data = Order::query()->with(['details.product', 'details.part']);
+        $data = Order::query()->with(['details.product', 'details.part', 'partnerCompany']);
 
         if ($this->user->role == 2 || $this->user->role == 4 || $this->user->role == 5) {
             $data->where('user_id', $this->user->id);
@@ -95,7 +95,16 @@ class OrderController extends Controller
                 return '<strong>#' . $row->invoice_no . '</strong>';
             })
             ->editColumn('user_id', function ($row) {
-                return optional($row->company)->first_name ?? '-' . ' ' . optional($row->company)->last_name ?? '-';
+                $company = $row->partnerCompany;
+
+                if (!$company) {
+                    return '<span class="text-muted">-</span>';
+                }
+
+                return '<div class="order-partner">'
+                    . '<span class="d-block fw-bold text-truncate" title="' . e($company->name ?? '') . '">' . e($company->name ?? '-') . '</span>'
+                    . '<small class="text-muted text-nowrap"><i class="fa-solid fa-phone"></i> ' . e($company->phone_number ?? '-') . '</small>'
+                    . '</div>';
             })
             ->editColumn('products', function ($row) {
                 if ($row->details->isEmpty()) {
@@ -568,4 +577,3 @@ class OrderController extends Controller
         return null;
     }
 }
-

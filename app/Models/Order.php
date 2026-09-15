@@ -70,6 +70,13 @@ class Order extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    /**
+     * The partner's company record (company name, phone etc.).
+     */
+    public function partnerCompany(){
+        return $this->hasOne(Company::class, 'user_id', 'user_id');
+    }
+
     public function details(){
         return $this->hasMany(OrderDetail::class);
     }
