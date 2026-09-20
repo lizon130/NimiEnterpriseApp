@@ -7,6 +7,7 @@
         $brands = $brands ?? collect();
         $filter_attributes = $filter_attributes ?? collect();
         $loose_categories = $loose_categories ?? collect();
+        $has_special = $has_special ?? false;
         $current_category = $current_category ?? null;
         $root_category = $root_category ?? null;
         $current_brand = $current_brand ?? null;
@@ -286,11 +287,13 @@
             box-shadow: 0 4px 13px rgba(248, 86, 6, .2);
         }
 
-        #products-page.loose-mode .desktop-sidebar {
+        #products-page.loose-mode .desktop-sidebar,
+        #products-page.special-mode .desktop-sidebar {
             display: none !important;
         }
 
-        #products-page.loose-mode .products-layout {
+        #products-page.loose-mode .products-layout,
+        #products-page.special-mode .products-layout {
             grid-template-columns: minmax(0, 1fr);
         }
 
@@ -1342,7 +1345,8 @@
                 display: flex;
             }
 
-            #products-page.loose-mode .mobile-filter-bar {
+            #products-page.loose-mode .mobile-filter-bar,
+            #products-page.special-mode .mobile-filter-bar {
                 display: none;
             }
 
@@ -1438,6 +1442,13 @@
                     <button type="button" class="mode-btn" id="modeLooseBtn">
                         <i class="fa-solid fa-scale-balanced"></i>
                         <span>{{ trans('language.loose_products') ?? 'Loose Products' }}</span>
+                    </button>
+                @endif
+
+                @if ($has_special)
+                    <button type="button" class="mode-btn" id="modeSpecialBtn">
+                        <i class="fa-solid fa-gift"></i>
+                        <span>{{ trans('language.special_offer') ?? 'Special Offer' }}</span>
                     </button>
                 @endif
             </div>
@@ -2003,11 +2014,14 @@ $brandStripAll = $brands
 
                     fd.set('name', $('#productNameInput').val().trim());
                     fd.set('loose', listState.mode === 'loose' ? 1 : 0);
+                    fd.set('special', listState.mode === 'special' ? 1 : 0);
 
                     if (listState.mode === 'loose') {
                         if (listState.looseCat) {
                             fd.append('category_for_filter[]', listState.looseCat);
                         }
+                    } else if (listState.mode === 'special') {
+                        /* Special Offer tab: only special-offer category products. */
                     } else {
                         uniqueChecked('.brands_for_filter').forEach(function(value) {
                             fd.append('brands_for_filter[]', value);
@@ -2157,7 +2171,6 @@ $brandStripAll = $brands
                 }
 
                 /* ===== "See all" brands modal ===== */
-
                 function ensureAllBrandsModal() {
                     if ($('#allBrandsModal').length) return;
 
@@ -2208,14 +2221,15 @@ $brandStripAll = $brands
 
                 /* Clicking a brand card filters the listing by that brand. */
                 function applyBrandFilter(id) {
-                    /* Brand filters only work in "all" mode — switch out of loose mode first. */
-                    if (listState.mode === 'loose') {
+                    /* Brand filters only work in "all" mode — switch out of loose/special mode first. */
+                    if (listState.mode !== 'all') {
                         listState.mode = 'all';
                         listState.looseCat = '';
                         currentCategory = '';
-                        $('#products-page').removeClass('loose-mode');
+                        $('#products-page').removeClass('loose-mode special-mode');
                         $('#modeAllBtn').addClass('active');
                         $('#modeLooseBtn').removeClass('active');
+                        $('#modeSpecialBtn').removeClass('active');
                         $('#looseChips .loose-chip').removeClass('active').first().addClass('active');
                     }
 
@@ -2487,7 +2501,7 @@ $brandStripAll = $brands
                 });
 
                 $(document).on('change', '.category_for_filter, .brands_for_filter, .attributes_for_filter', function() {
-                    if (listState.mode === 'loose') return;
+                    if (listState.mode !== 'all') return;
 
                     syncDuplicateFilter($(this));
                     currentCategory = '';
@@ -2534,18 +2548,29 @@ $brandStripAll = $brands
                         mode = 'all';
                     }
 
+                    if (mode === 'special' && !$('#modeSpecialBtn').length) {
+                        mode = 'all';
+                    }
+
                     if (listState.mode === mode) return;
 
                     listState.mode = mode;
                     listState.looseCat = '';
                     currentCategory = '';
 
-                    $('#products-page').toggleClass('loose-mode', mode === 'loose');
+                    $('#products-page').removeClass('loose-mode special-mode');
+                    if (mode === 'loose') {
+                        $('#products-page').addClass('loose-mode');
+                    } else if (mode === 'special') {
+                        $('#products-page').addClass('special-mode');
+                    }
+
                     $('#modeAllBtn').toggleClass('active', mode === 'all');
                     $('#modeLooseBtn').toggleClass('active', mode === 'loose');
+                    $('#modeSpecialBtn').toggleClass('active', mode === 'special');
                     $('#looseChips .loose-chip').removeClass('active').first().addClass('active');
 
-                    if (mode === 'loose') {
+                    if (mode !== 'all') {
                         $('.category_for_filter, .brands_for_filter, .attributes_for_filter').prop('checked', false);
                         updateFilterUI();
                     }
@@ -2559,6 +2584,10 @@ $brandStripAll = $brands
 
                 $('#modeLooseBtn').on('click', function() {
                     applyMode('loose');
+                });
+
+                $('#modeSpecialBtn').on('click', function() {
+                    applyMode('special');
                 });
 
                 $(document).on('click', '.loose-chip', function() {
@@ -2849,6 +2878,11 @@ $brandStripAll = $brands
                             $('#looseChips .loose-chip[data-cat="' + String(saved.looseCat).replace(/"/g, '\\"') + '"]')
                                 .addClass('active');
                         }
+                    } else if (saved.mode === 'special' && $('#modeSpecialBtn').length) {
+                        listState.mode = 'special';
+                        $('#products-page').addClass('special-mode');
+                        $('#modeAllBtn').removeClass('active');
+                        $('#modeSpecialBtn').addClass('active');
                     } else {
                         setCheckedValues('.brands_for_filter', saved.brands);
                         setCheckedValues('.category_for_filter', saved.categories);

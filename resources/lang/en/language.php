@@ -14,6 +14,7 @@
         'products'         => 'Products',
         'all_products'     => 'All Products',
         'loose_products'   => 'Loose Products',
+        'special_offer'    => 'Special Offer',
         'all_loose'        => 'All Loose',
         'loading_more'     => 'Loading more products…',
         'end_of_list'      => 'You have reached the end of the list',

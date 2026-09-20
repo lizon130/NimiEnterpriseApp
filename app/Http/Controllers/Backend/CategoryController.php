@@ -75,6 +75,9 @@ class CategoryController extends Controller
             if ($row->is_loose == 1) {
                 $title .= ' <span class="badge bg-warning text-dark">Loose</span>';
             }
+            if ($row->is_special == 1) {
+                $title .= ' <span class="badge bg-danger">Special</span>';
+            }
             return $title;
         })
 
@@ -164,6 +167,7 @@ class CategoryController extends Controller
         $category->value  = $request->value;
         $category->status  = ($request->status) ? 1 : 0;
         $category->show_home  = ($request->show_home) ? 1 : 0;
+        $category->is_special  = ($request->is_special) ? 1 : 0;
 		$category->short_number = $request->short_number;
         if($request->hasFile('image')){
 

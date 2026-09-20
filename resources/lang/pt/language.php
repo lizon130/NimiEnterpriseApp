@@ -14,6 +14,7 @@
         'products'         => 'Produtos',
         'all_products'     => 'Todos os Produtos',
         'loose_products'   => 'Produtos Avulsos',
+        'special_offer'    => 'Oferta Especial',
         'all_loose'        => 'Todos os Avulsos',
         'loading_more'     => 'Carregando mais produtos…',
         'end_of_list'      => 'Você chegou ao fim da lista',

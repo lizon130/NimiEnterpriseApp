@@ -14,6 +14,7 @@
         'products'         => 'Produits',
         'all_products'     => 'Tous les Produits',
         'loose_products'   => 'Produits en Vrac',
+        'special_offer'    => 'Offre Spéciale',
         'all_loose'        => 'Tout le Vrac',
         'loading_more'     => 'Chargement de plus de produits…',
         'end_of_list'      => 'Vous avez atteint la fin de la liste',

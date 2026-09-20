@@ -81,6 +81,16 @@
                         </div>
                     </div>
 
+                    <div class="form-group row">
+                        <label for="" class="col-sm-3 col-form-label">Special Offer Category</label>
+                        <div class="col-sm-9 d-flex align-items-center">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_special" id="isSpecialSwitch">
+                            </div>
+                            <small class="text-muted ms-2">Products of this category show only inside the "Special Offer" tab on the shop page.</small>
+                        </div>
+                    </div>
+
                     <div class="form-group  row">
                         <label for="" class="col-sm-3 col-form-label">Image</label>
                         <div class="col-sm-3">

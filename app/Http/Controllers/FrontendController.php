@@ -418,8 +418,14 @@ class FrontendController extends Controller
         $categories = Category::whereNull('parent_category')
             ->where('status', 1)
             ->where('is_loose', 0)
+            ->where('is_special', 0)
             ->orderBy('short_number', 'asc')
             ->get();
+
+        $has_special = Category::whereNull('parent_category')
+            ->where('status', 1)
+            ->where('is_special', 1)
+            ->exists();
 
         $loose_categories = Category::whereNull('parent_category')
             ->where('status', 1)
@@ -454,6 +460,7 @@ class FrontendController extends Controller
             'brands',
             'categories',
             'loose_categories',
+            'has_special',
             'filter_attributes',
             'current_category',
             'root_category'
@@ -467,12 +474,20 @@ class FrontendController extends Controller
             return Brand::where('status', 1)->get();
         });
 
-        $categories = Cache::remember('categories_non_loose', now()->addHours(1), function () {
+        $categories = Cache::remember('categories_regular', now()->addHours(1), function () {
             return Category::whereNull('parent_category')
                 ->where('status', 1)
                 ->where('is_loose', 0)
+                ->where('is_special', 0)
                 ->orderBy('short_number', 'asc')
                 ->get();
+        });
+
+        $has_special = Cache::remember('has_special_category', now()->addHours(1), function () {
+            return Category::whereNull('parent_category')
+                ->where('status', 1)
+                ->where('is_special', 1)
+                ->exists();
         });
 
         $loose_categories = Cache::remember('loose_categories', now()->addHours(1), function () {
@@ -513,6 +528,7 @@ class FrontendController extends Controller
             'brands',
             'categories',
             'loose_categories',
+            'has_special',
             'filter_attributes',
             'current_category',
             'root_category'
@@ -524,6 +540,7 @@ class FrontendController extends Controller
 
         $subcategory = null;
         $isLooseMode = $request->boolean('loose');
+        $isSpecialMode = $request->boolean('special');
         $search = trim((string) $request->input('name', ''));
 
         /*
@@ -534,12 +551,30 @@ class FrontendController extends Controller
             ->with(['brand', 'category', 'attributes'])
             ->where('status', 1);
 
-        if ($isLooseMode) {
+        if ($isSpecialMode) {
+            /* Special Offer tab: only products of special-offer categories. */
+            $products->where(function ($query) {
+                $query->whereHas('category', function ($q) {
+                    $q->where('is_special', 1);
+                })->orWhereHas('sub_category', function ($q) {
+                    $q->where('is_special', 1);
+                });
+            });
+        } elseif ($isLooseMode) {
             $products->where(function ($query) {
                 $query->whereHas('category', function ($q) {
                     $q->where('is_loose', 1);
                 })->orWhereHas('sub_category', function ($q) {
                     $q->where('is_loose', 1);
+                });
+            });
+
+            /* Special-offer products never leak into other tabs. */
+            $products->where(function ($query) {
+                $query->whereDoesntHave('category', function ($q) {
+                    $q->where('is_special', 1);
+                })->whereDoesntHave('sub_category', function ($q) {
+                    $q->where('is_special', 1);
                 });
             });
         } else {
@@ -548,6 +583,15 @@ class FrontendController extends Controller
                     $q->where('is_loose', 1);
                 })->whereDoesntHave('sub_category', function ($q) {
                     $q->where('is_loose', 1);
+                });
+            });
+
+            /* Special-offer products never leak into other tabs. */
+            $products->where(function ($query) {
+                $query->whereDoesntHave('category', function ($q) {
+                    $q->where('is_special', 1);
+                })->whereDoesntHave('sub_category', function ($q) {
+                    $q->where('is_special', 1);
                 });
             });
         }
