@@ -31,6 +31,23 @@ class ProductPart extends Model
         return $this->belongsTo(Category::class, 'category_id');
     }
 
+    public function scopeWhereActiveRelations($query)
+    {
+        return $query
+            ->where(function ($q) {
+                $q->whereNull('category_id')
+                  ->orWhereHas('category', function ($cq) {
+                      $cq->where('status', 1);
+                  });
+            })
+            ->where(function ($q) {
+                $q->whereNull('brand_id')
+                  ->orWhereHas('brand', function ($bq) {
+                      $bq->where('status', 1);
+                  });
+            });
+    }
+
     public function product(){
         return $this->belongsTo(Product::class, 'product_id', 'id');
     }

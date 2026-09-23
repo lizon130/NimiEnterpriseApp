@@ -174,6 +174,7 @@ class FrontendController extends Controller
         $products = Product::with('category')
             ->where('status', 1)
             ->where('features', 1)
+            ->whereActiveRelations()
             ->orderBy('short_number', 'asc')
             ->get();
 
@@ -256,7 +257,7 @@ class FrontendController extends Controller
 
         if (count($subCategories) > 0) {
             // Cache the products for the current category
-            $products = Product::where('category_id', $currentCategory->id)->orderBy('short_number', 'asc')->limit(1)->get();
+            $products = Product::where('category_id', $currentCategory->id)->where('status', 1)->whereActiveRelations()->orderBy('short_number', 'asc')->limit(1)->get();
 
             return view('frontend.pages.subcategory', compact('currentCategory', 'subCategories', 'products'));
         } else {
@@ -303,7 +304,7 @@ class FrontendController extends Controller
 
 
         // Cache the products for the current category
-        $products = Product::where('category_id', $current_brand->id)->orderBy('short_number', 'asc')->get();
+        $products = Product::where('category_id', $current_brand->id)->where('status', 1)->whereActiveRelations()->orderBy('short_number', 'asc')->get();
 
         // Cache the categories
         $categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
@@ -334,7 +335,7 @@ class FrontendController extends Controller
     public function searchProductBycategory(Request $request)
     {
         App::setLocale(Session::get('language'));
-        $products = Product::where('status', 1);
+        $products = Product::where('status', 1)->whereActiveRelations();
 
         if ($request->category_id) {
             $categoryId = $request->category_id;
@@ -549,7 +550,8 @@ class FrontendController extends Controller
          */
         $products = Product::query()
             ->with(['brand', 'category', 'attributes'])
-            ->where('status', 1);
+            ->where('status', 1)
+            ->whereActiveRelations();
 
         if ($isSpecialMode) {
             /* Special Offer tab: only products of special-offer categories. */
@@ -727,6 +729,7 @@ class FrontendController extends Controller
 
         $suggestions = Product::query()
             ->where('status', 1)
+            ->whereActiveRelations()
             ->where(function ($query) use ($like) {
                 $query->whereRaw('LOWER(name) LIKE ?', [$like])
                     ->orWhereRaw('LOWER(code) LIKE ?', [$like])
@@ -781,10 +784,10 @@ class FrontendController extends Controller
     {
         App::setLocale(Session::get('language'));
 
-        $product = Product::with(['brand', 'category', 'attributes'])->where('slug', $id)->first();
+        $product = Product::with(['brand', 'category', 'attributes'])->where('slug', $id)->where('status', 1)->whereActiveRelations()->first();
 
         if (!$product) {
-            $product = Product::with(['brand', 'category', 'attributes'])->find($id);
+            $product = Product::with(['brand', 'category', 'attributes'])->where('status', 1)->whereActiveRelations()->find($id);
         }
 
         if (!$product) {
@@ -797,6 +800,7 @@ class FrontendController extends Controller
         $releted_products = Product::where('sub_category_id', $product->sub_category_id)
             ->where('id', '!=', $product->id)
             ->where('status', 1)
+            ->whereActiveRelations()
             ->orderByRaw("CASE WHEN COALESCE(discount, 0) > 0 THEN 0 ELSE 1 END")
             ->orderBy('short_number', 'asc')
             ->get();
@@ -820,7 +824,7 @@ class FrontendController extends Controller
     {
         App::setLocale(Session::get('language'));
         $brands = Brand::where('status', 1)->get();
-        $parts = ProductPart::where('status', 1)->get();
+        $parts = ProductPart::where('status', 1)->whereActiveRelations()->get();
         $categories = Category::whereNull('parent_category')->where('status', 1)->orderBy('short_number', 'asc')->get();
         $filter_attributes = PartAttribute::select('attribute_name', \DB::raw('MAX(id) as max_id'))
             ->where('type', 'attributes')
@@ -840,7 +844,7 @@ class FrontendController extends Controller
     {
         App::setLocale(Session::get('language'));
 
-        $parts = ProductPart::where('status', 1);
+        $parts = ProductPart::where('status', 1)->whereActiveRelations();
 
         if ($request->name) {
             $parts->where('name', 'like', "%" . $request->name . "%");
@@ -2204,7 +2208,7 @@ class FrontendController extends Controller
     {
         App::setLocale(Session::get('language'));
         $search_text = $request->search_text;
-        $products = Product::where('status', 1);
+        $products = Product::where('status', 1)->whereActiveRelations();
         if (!empty($search_text)) {
             $products->where(function ($query) use ($search_text) {
                 $query->where('name', 'like', "%" . $search_text . "%")
@@ -2217,7 +2221,7 @@ class FrontendController extends Controller
         //$products = $products->get();
         $products = $products->orderBy('short_number', 'asc')->get();
 
-        $parts = ProductPart::where('status', 1);
+        $parts = ProductPart::where('status', 1)->whereActiveRelations();
         if (!empty($search_text)) {
             $parts->where(function ($query) use ($search_text) {
                 $query->where('name', 'like', "%" . $search_text . "%")
@@ -2237,7 +2241,10 @@ class FrontendController extends Controller
     {
         App::setLocale(Session::get('language'));
         $brand = Brand::find($brand_id);
-        $products = Product::where('brand_id', $brand_id)->where('status', 1)->get();
+        if (!$brand) {
+            return response()->view('errors.404', [], 404);
+        }
+        $products = Product::where('brand_id', $brand_id)->where('status', 1)->whereActiveRelations()->get();
         return view('frontend.pages.brand-product', compact('brand', 'products'));
     }
 

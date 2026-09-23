@@ -10,6 +10,7 @@ use Auth;
 use Helper;
 use App\Models\Brand;
 use App\Models\Translation;
+use Illuminate\Support\Facades\Cache;
 use Session;
 
 class BrandController extends Controller
@@ -64,6 +65,15 @@ class BrandController extends Controller
         ->rawColumns(['image','status','action'])->make(true);
     }
 
+    private function clearFrontendCache()
+    {
+        Cache::forget('brands');
+        Cache::forget('categories');
+        Cache::forget('categories_regular');
+        Cache::forget('has_special_category');
+        Cache::forget('loose_categories');
+    }
+
     public function store(Request $request){
         $validator = $request->validate([
 			'title' => 'required|unique:brand,title',
@@ -83,9 +93,11 @@ class BrandController extends Controller
             $brand->image = $filename;
         }
         if ($brand->save()) {
-            
-            // language 
+
+            // language
             Helper::insertLanguage(Brand::class, $brand->id, 'en', 'title', $brand->title);
+
+            $this->clearFrontendCache();
 
             return response()->json([
                 'type' => 'success',
@@ -129,6 +141,8 @@ class BrandController extends Controller
             // language
             Helper::insertLanguage(Brand::class, $brand->id, Session::get('admin_language') ?? 'en', 'title', $request->title);
 
+            $this->clearFrontendCache();
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Brand updated successfully.',
@@ -148,6 +162,7 @@ class BrandController extends Controller
                 unlink(public_path('uploads/brand-images/'.$brand->image));
             }
             $brand->delete();
+            $this->clearFrontendCache();
             return json_encode(['success' => 'Brand deleted successfully.']);
         }else{
             return json_encode(['error' => 'Brand not found.']);

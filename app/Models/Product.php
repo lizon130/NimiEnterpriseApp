@@ -72,7 +72,13 @@ class Product extends Model
             ->where(function ($q) {
                 $q->whereNull('sub_category_id')
                   ->orWhereHas('sub_category', function ($scq) {
-                      $scq->where('status', 1);
+                      $scq->where('status', 1)
+                          ->where(function ($pq) {
+                              $pq->whereNull('parent_category')
+                                 ->orWhereHas('parent', function ($pcq) {
+                                     $pcq->where('status', 1);
+                                 });
+                          });
                   });
             })
             ->where(function ($q) {

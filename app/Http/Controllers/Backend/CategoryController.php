@@ -10,6 +10,7 @@ use Auth;
 use Helper;
 use App\Models\Category;
 use App\Models\Translation;
+use Illuminate\Support\Facades\Cache;
 use Session;
 
 class CategoryController extends Controller
@@ -106,6 +107,15 @@ class CategoryController extends Controller
         ->rawColumns(['image','is_parent','status','parent_category','title','action'])->make(true);
     }
 
+    private function clearFrontendCache()
+    {
+        Cache::forget('brands');
+        Cache::forget('categories');
+        Cache::forget('categories_regular');
+        Cache::forget('has_special_category');
+        Cache::forget('loose_categories');
+    }
+
     public function store(Request $request){
         $validator = $request->validate([
 			'title' => 'required|unique:category,title',
@@ -131,9 +141,11 @@ class CategoryController extends Controller
             $category->image = $filename;
         }
         if ($category->save()) {
-            
-            // language 
+
+            // language
             Helper::insertLanguage(Category::class, $category->id, 'en', 'title', $category->title);
+
+            $this->clearFrontendCache();
 
             return response()->json([
                 'type' => 'success',
@@ -185,6 +197,8 @@ class CategoryController extends Controller
             // language
             Helper::insertLanguage(Category::class, $category->id, Session::get('admin_language') ?? 'en', 'title', $request->title);
 
+            $this->clearFrontendCache();
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Category updated successfully.',
@@ -204,6 +218,7 @@ class CategoryController extends Controller
                 unlink(public_path('uploads/category-images/'.$category->image));
             }
             $category->delete();
+            $this->clearFrontendCache();
             return json_encode(['success' => 'Category deleted successfully.']);
         }else{
             return json_encode(['error' => 'Category not found.']);
