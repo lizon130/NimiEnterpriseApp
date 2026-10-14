@@ -126,6 +126,13 @@
                     </a>
                 @endif
 
+                @if (Helper::hasRight('notice.view'))
+                    <a class="nav-link {{ Route::is('admin.notice') ? 'active' : '' }}"
+                        href="{{ route('admin.notice') }}">
+                        <div class="sb-nav-link-icon"><i class="fa-solid fa-bullhorn"></i></div> Notice Management
+                    </a>
+                @endif
+
                 @if (Helper::hasRight('product.view'))
                     <a class="nav-link {{ Route::is('admin.product') ? 'active' : '' }}"
                         href="{{ route('admin.product') }}">

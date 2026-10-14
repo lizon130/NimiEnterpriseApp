@@ -19,6 +19,7 @@ use App\Models\Inquiry;
 use App\Models\InquiryProduct;
 use App\Models\ServiceOrder;
 use App\Models\News;
+use App\Models\Notice;
 use App\Models\Catalogue;
 use App\Models\Company;
 use App\Models\ProductPart;
@@ -457,6 +458,10 @@ class FrontendController extends Controller
         $current_category = null;
         $root_category = Category::find($id);
 
+        $activeNotice = Cache::remember('active_notice', now()->addMinutes(10), function () {
+            return Notice::where('status', 1)->latest('id')->first();
+        });
+
         return view('frontend.pages.products', compact(
             'brands',
             'categories',
@@ -464,7 +469,8 @@ class FrontendController extends Controller
             'has_special',
             'filter_attributes',
             'current_category',
-            'root_category'
+            'root_category',
+            'activeNotice'
         ));
     }
     public function allProducts(Request $request)
@@ -525,6 +531,10 @@ class FrontendController extends Controller
             $root_category = null;
         }
 
+        $activeNotice = Cache::remember('active_notice', now()->addMinutes(10), function () {
+            return Notice::where('status', 1)->latest('id')->first();
+        });
+
         return view('frontend.pages.products', compact(
             'brands',
             'categories',
@@ -532,7 +542,8 @@ class FrontendController extends Controller
             'has_special',
             'filter_attributes',
             'current_category',
-            'root_category'
+            'root_category',
+            'activeNotice'
         ));
     }
     public function searchProducts(Request $request)

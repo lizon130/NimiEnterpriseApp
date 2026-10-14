@@ -9,6 +9,7 @@ use App\Http\Controllers\Backend\CustomFieldController;
 use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\InquiryController;
 use App\Http\Controllers\Backend\NewsController;
+use App\Http\Controllers\Backend\NoticeController;
 use App\Http\Controllers\Backend\OrderController;
 use App\Http\Controllers\Backend\PartController;
 use App\Http\Controllers\Backend\PartnerController;
@@ -300,6 +301,15 @@ Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
         Route::get('/edit/{id}', [BrandController::class, 'edit'])->name('admin.brand.edit');
         Route::any('/update/{id}', [BrandController::class, 'update'])->name('admin.brand.update');
         Route::get('/delete/{id}', [BrandController::class, 'delete'])->name('admin.brand.delete');
+    });
+
+    Route::group(['prefix' => '/notice'], function () {
+        Route::get('/', [NoticeController::class, 'index'])->name('admin.notice');
+        Route::get('/get/list', [NoticeController::class, 'getList']);
+        Route::post('/store', [NoticeController::class, 'store'])->name('admin.notice.store');
+        Route::get('/edit/{id}', [NoticeController::class, 'edit'])->name('admin.notice.edit');
+        Route::any('/update/{id}', [NoticeController::class, 'update'])->name('admin.notice.update');
+        Route::get('/delete/{id}', [NoticeController::class, 'delete'])->name('admin.notice.delete');
     });
 
     // Add inside admin middleware group

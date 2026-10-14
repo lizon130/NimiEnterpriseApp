@@ -3140,4 +3140,165 @@ $brandStripAll = $brands
         </script>
     @endpush
 
+    {{-- Active Notice Popup --}}
+    @if (!empty($activeNotice))
+        <style>
+            #siteNoticeModal .modal-content {
+                border: none;
+                border-radius: 18px;
+                overflow: hidden;
+                box-shadow: 0 24px 60px rgba(15, 23, 42, .28);
+            }
+            #siteNoticeModal .snm-header {
+                position: relative;
+                padding: 34px 20px 26px;
+                background: linear-gradient(135deg, #f85606, #ff8a00);
+                text-align: center;
+            }
+            #siteNoticeModal .snm-header::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                opacity: .25;
+                background-image:
+                    radial-gradient(circle at 15% 25%, rgba(255,255,255,.35) 0 1.5px, transparent 1.5px),
+                    radial-gradient(circle at 85% 70%, rgba(255,255,255,.28) 0 1.5px, transparent 1.5px);
+                background-size: 30px 30px, 44px 44px;
+            }
+            #siteNoticeModal .snm-icon {
+                width: 62px;
+                height: 62px;
+                margin: 0 auto 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, .22);
+                border: 2px solid rgba(255, 255, 255, .55);
+                color: #fff;
+                font-size: 26px;
+                position: relative;
+            }
+            #siteNoticeModal .snm-label {
+                color: rgba(255, 255, 255, .92);
+                font-size: 12px;
+                font-weight: 600;
+                letter-spacing: 2.5px;
+                text-transform: uppercase;
+                position: relative;
+            }
+            #siteNoticeModal .snm-close {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                z-index: 5;
+                width: 34px;
+                height: 34px;
+                border: none;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, .25);
+                color: #fff;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: .2s ease;
+            }
+            #siteNoticeModal .snm-close:hover { background: rgba(255, 255, 255, .45); }
+            #siteNoticeModal .snm-body {
+                padding: 22px 24px 8px;
+                text-align: center;
+            }
+            #siteNoticeModal .snm-title {
+                color: #0f172a;
+                font-size: 19px;
+                font-weight: 700;
+                line-height: 1.35;
+                margin-bottom: 10px;
+            }
+            #siteNoticeModal .snm-text {
+                color: #374151;
+                font-size: 15px;
+                line-height: 1.65;
+                white-space: pre-line;
+                margin-bottom: 0;
+            }
+            #siteNoticeModal .snm-footer {
+                padding: 18px 24px 24px;
+                border-top: none;
+                justify-content: center;
+            }
+            #siteNoticeModal .snm-btn {
+                min-width: 160px;
+                border: none;
+                border-radius: 10px;
+                padding: 11px 22px;
+                background: linear-gradient(135deg, #f85606, #ff8a00);
+                color: #fff;
+                font-size: 15px;
+                font-weight: 600;
+                box-shadow: 0 8px 20px rgba(248, 86, 6, .32);
+                transition: .2s ease;
+            }
+            #siteNoticeModal .snm-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 12px 26px rgba(248, 86, 6, .40);
+            }
+            @media (max-width: 480px) {
+                #siteNoticeModal .modal-dialog { margin: 12px; }
+                #siteNoticeModal .snm-header { padding: 28px 16px 20px; }
+                #siteNoticeModal .snm-title { font-size: 17px; }
+                #siteNoticeModal .snm-text { font-size: 14px; }
+            }
+        </style>
+        <div class="modal fade" id="siteNoticeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="snm-header">
+                        <button type="button" class="snm-close" data-bs-dismiss="modal" aria-label="Close">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <div class="snm-icon"><i class="fa-solid fa-bullhorn"></i></div>
+                        <div class="snm-label">Notice</div>
+                    </div>
+                    <div class="snm-body">
+                        <div class="snm-title">{{ $activeNotice->title }}</div>
+                        <p class="snm-text">{{ $activeNotice->description }}</p>
+                    </div>
+                    <div class="modal-footer snm-footer">
+                        <button type="button" class="btn snm-btn" data-bs-dismiss="modal">Understood</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @push('footer')
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function () {
+                    var noticeId = {{ $activeNotice->id }};
+                    var storageKey = 'noticeDismissed_' + noticeId;
+                    var dismissed = false;
+                    try {
+                        dismissed = sessionStorage.getItem(storageKey) === '1';
+                    } catch (e) {}
+
+                    if (!dismissed) {
+                        var modalEl = document.getElementById('siteNoticeModal');
+                        if (modalEl) {
+                            setTimeout(function () {
+                                var modal = new bootstrap.Modal(modalEl);
+                                modal.show();
+                            }, 600);
+                            modalEl.addEventListener('hidden.bs.modal', function () {
+                                try {
+                                    sessionStorage.setItem(storageKey, '1');
+                                } catch (e) {}
+                            });
+                        }
+                    }
+                });
+            </script>
+        @endpush
+    @endif
+
 @endsection
