@@ -28,12 +28,15 @@ public class MainActivity extends BridgeActivity {
     private WebView appWebView;
     private LinearLayout offlineOverlay;
     private boolean pageErrored = false;
+    private int autoRetryCount = 0;
+    private final android.os.Handler autoRetryHandler = new android.os.Handler();
 
     private final ConnectivityManager.NetworkCallback networkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
         public void onAvailable(Network network) {
             // Internet is back: hide the offline screen and reload automatically
             runOnUiThread(() -> {
+                autoRetryCount = 0;
                 boolean needsReload = pageErrored
                         || (offlineOverlay != null && offlineOverlay.getVisibility() == View.VISIBLE);
                 hideOfflineOverlay();
@@ -63,7 +66,10 @@ public class MainActivity extends BridgeActivity {
                 super.onReceivedError(view, request, error);
                 if (request.isForMainFrame()) {
                     pageErrored = true;
-                    runOnUiThread(() -> showOfflineOverlay());
+                    runOnUiThread(() -> {
+                        showOfflineOverlay();
+                        scheduleAutoRetry();
+                    });
                 }
             }
 
@@ -71,6 +77,8 @@ public class MainActivity extends BridgeActivity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 pageErrored = false;
+                autoRetryCount = 0;
+                autoRetryHandler.removeCallbacksAndMessages(null);
                 if (isNetworkAvailable()) {
                     runOnUiThread(() -> hideOfflineOverlay());
                 }
@@ -104,6 +112,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onDestroy() {
+        autoRetryHandler.removeCallbacksAndMessages(null);
         try {
             ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
             if (cm != null) {
@@ -133,6 +142,19 @@ public class MainActivity extends BridgeActivity {
         if (network == null) return false;
         NetworkCapabilities caps = cm.getNetworkCapabilities(network);
         return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+    }
+
+    private void scheduleAutoRetry() {
+        // Mobile data networks sometimes fail DNS momentarily; retry silently a few times
+        if (autoRetryCount >= 3) return;
+        if (!isNetworkAvailable()) return;
+        autoRetryCount++;
+        autoRetryHandler.postDelayed(() -> {
+            if (pageErrored && appWebView != null) {
+                appWebView.reload();
+                scheduleAutoRetry();
+            }
+        }, 3000);
     }
 
     private void buildOfflineOverlay() {
