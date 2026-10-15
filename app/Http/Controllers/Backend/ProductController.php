@@ -58,6 +58,10 @@ class ProductController extends Controller
             });
         }
 
+        if ($request->status) {
+            $data->where('status', ($request->status == 1) ? 1 : 0);
+        }
+
         return Datatables::of($data)
 
             ->editColumn('thumbnail', function ($row) {

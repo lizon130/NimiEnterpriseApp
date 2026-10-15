@@ -8,7 +8,7 @@
             <div class="card-body pb-0">
                 <form method="" id="filter_form">
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <select name="category" class="form-control" id="category">
                                     <option value="">Select Category</option>
@@ -18,7 +18,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <select name="brand" class="form-control" id="brand">
                                     <option value="">Select Brand</option>
@@ -28,10 +28,19 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-group">
                                 <input type="text" class="form-control" name="name" id="name"
                                     placeholder="Product Name">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <select name="status" class="form-control" id="status">
+                                    <option value="">Select Status</option>
+                                    <option value="1">Active</option>
+                                    <option value="2">Inactive</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-md-12">
@@ -124,7 +133,7 @@
             });
 
 
-            function getproduct(category = null, brand = null, name = null) {
+            function getproduct(category = null, brand = null, name = null, status = null) {
                 var table = jQuery('#dataTable').DataTable({
                     responsive: true,
                     processing: true,
@@ -135,7 +144,8 @@
                         data: {
                             'category': category,
                             'brand': brand,
-                            'name': name
+                            'name': name,
+                            'status': status
                         },
                     },
                     aLengthMenu: [
@@ -314,9 +324,10 @@
                 let category = $('#filter_form #category').val();
                 let brand = $('#filter_form #brand').val();
                 let name = $('#filter_form #name').val();
+                let status = $('#filter_form #status').val();
 
                 $('#dataTable').DataTable().destroy();
-                getproduct(category, brand, name);
+                getproduct(category, brand, name, status);
             })
 
             $(document).on('click', '#export_pdf_btn', function(e) {
