@@ -12,10 +12,15 @@
                 <h6 class="mb-0">Order Status:</h6>
                 @php
                     $statusBadge = '';
-                    if($order->status == 0) $statusBadge = '<span class="badge bg-warning fs-6">🆕 New Order</span>';
-                    elseif($order->status == 1) $statusBadge = '<span class="badge bg-info fs-6">🚚 Shipping</span>';
-                    elseif($order->status == 2) $statusBadge = '<span class="badge bg-success fs-6">✅ Delivered</span>';
-                    else $statusBadge = '<span class="badge bg-danger fs-6">❌ Rejected</span>';
+                    if ($order->status == 0) {
+                        $statusBadge = '<span class="badge bg-warning fs-6">🆕 New Order</span>';
+                    } elseif ($order->status == 1) {
+                        $statusBadge = '<span class="badge bg-info fs-6">🚚 Shipping</span>';
+                    } elseif ($order->status == 2) {
+                        $statusBadge = '<span class="badge bg-success fs-6">✅ Delivered</span>';
+                    } else {
+                        $statusBadge = '<span class="badge bg-danger fs-6">❌ Rejected</span>';
+                    }
                 @endphp
                 {!! $statusBadge !!}
             </div>
@@ -41,7 +46,7 @@
                         <tr>
                             <td><strong>Payment Status:</strong></td>
                             <td>
-                                @if($order->payment_status == 1)
+                                @if ($order->payment_status == 1)
                                     <span class="badge bg-success">Paid</span>
                                 @else
                                     <span class="badge bg-danger">Pending</span>
@@ -50,7 +55,9 @@
                         </tr>
                         <tr>
                             <td><strong>Total Amount:</strong></td>
-                            <td><strong class="text-primary fs-5">৳{{ number_format($order->total_price, 2) }}</strong></td>
+                            <td><strong
+                                    class="text-primary fs-5">৳{{ number_format($group_total ?? $order->total_price, 2) }}</strong>
+                            </td>
                         </tr>
                     </table>
                 </div>
@@ -58,7 +65,7 @@
         </div>
 
         <div class="col-md-6">
-              <!-- Partner/Company Information -->
+            <!-- Partner/Company Information -->
             <div class="card mb-3">
                 <div class="card-header bg-light">
                     <h6 class="mb-0"><i class="fa-solid fa-building"></i> Partner Information</h6>
@@ -81,7 +88,7 @@
                             <td><strong>Phone:</strong></td>
                             <td>{{ $billing->phone ?? 'N/A' }}</td>
                         </tr>
-                         <tr>
+                        <tr>
                             <td width="40%"><strong>Address:</strong></td>
                             <td>{{ $billing->address ?? 'N/A' }}</td>
                         </tr>
@@ -116,12 +123,13 @@
                                         <td>{{ $key + 1 }}</td>
                                         <td>
                                             <strong>{{ $item->product->name ?? 'N/A' }}</strong>
-                                            @if($item->part)
-                                                <br><small class="text-muted">Part: {{ $item->part->name ?? 'N/A' }}</small>
+                                            @if ($item->part)
+                                                <br><small class="text-muted">Part:
+                                                    {{ $item->part->name ?? 'N/A' }}</small>
                                             @endif
                                         </td>
                                         <td>
-                                            @if($item->type == 'part')
+                                            @if ($item->type == 'part')
                                                 <span class="badge bg-info">Part</span>
                                             @else
                                                 <span class="badge bg-primary">Product</span>
@@ -130,8 +138,8 @@
                                         <td>৳{{ number_format($item->unit_price, 2) }}</td>
                                         <td>{{ $item->quantity }}</td>
                                         <td>
-                                            @if($item->discount > 0)
-                                                @if($item->discount_type == 'percent')
+                                            @if ($item->discount > 0)
+                                                @if ($item->discount_type == 'percent')
                                                     {{ $item->discount }}% off
                                                 @else
                                                     ৳{{ number_format($item->discount, 2) }} off
@@ -151,7 +159,8 @@
                             <tfoot class="table-light">
                                 <tr>
                                     <td colspan="6" class="text-end fw-bold">Total Amount:</td>
-                                    <td class="fw-bold fs-5 text-primary">৳{{ number_format($order->total_price, 2) }}</td>
+                                    <td class="fw-bold fs-5 text-primary">
+                                        ৳{{ number_format($group_total ?? $order->total_price, 2) }}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -165,7 +174,7 @@
     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
         <i class="fa-solid fa-times"></i> Close
     </button>
-    @if($order->status != 2 && $order->status != 3)
+    @if ($order->status != 2 && $order->status != 3)
         <a href="{{ route('admin.order.edit.status', $order->id) }}" class="btn btn-warning">
             <i class="fa-solid fa-truck"></i> Update Status
         </a>
@@ -177,9 +186,14 @@
 
 <style>
     @media print {
-        .modal-header, .modal-footer, .btn-close, .btn {
+
+        .modal-header,
+        .modal-footer,
+        .btn-close,
+        .btn {
             display: none !important;
         }
+
         .modal {
             position: absolute;
             top: 0;
@@ -188,10 +202,12 @@
             margin: 0;
             padding: 0;
         }
+
         .modal-content {
             border: none;
             box-shadow: none;
         }
+
         .card {
             break-inside: avoid;
         }

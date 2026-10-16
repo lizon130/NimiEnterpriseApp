@@ -62,16 +62,38 @@
             </div>
             <div class="card-body table-responsive">
                 <style>
-                    #dataTable .order-products { min-width: 150px; max-width: 240px; }
-                    #dataTable .order-item + .order-item { margin-top: 4px; }
-                    #dataTable .order-item-name { min-width: 0; font-size: 0.875rem; }
-                    #dataTable .toggle-items { text-decoration: none; }
-                    #dataTable .order-partner { min-width: 140px; max-width: 200px; }
-                    #dataTable .order-partner small { margin-top: 1px; display: inline-block; }
+                    #dataTable .order-products {
+                        min-width: 150px;
+                        max-width: 240px;
+                    }
+
+                    #dataTable .order-item+.order-item {
+                        margin-top: 4px;
+                    }
+
+                    #dataTable .order-item-name {
+                        min-width: 0;
+                        font-size: 0.875rem;
+                    }
+
+                    #dataTable .toggle-items {
+                        text-decoration: none;
+                    }
+
+                    #dataTable .order-partner {
+                        min-width: 140px;
+                        max-width: 200px;
+                    }
+
+                    #dataTable .order-partner small {
+                        margin-top: 1px;
+                        display: inline-block;
+                    }
                 </style>
                 <table class="table table-bordered" id="dataTable">
                     <thead>
                         <tr>
+                            <th>Invoice</th>
                             <th>Order Date</th>
                             <th>Company</th>
                             <th>Products</th>
@@ -109,7 +131,14 @@
                         },
                     },
                     // ... (other DataTable settings)
+                    "order": [
+                        [0, 'desc']
+                    ],
                     columns: [{
+                            data: 'invoice_no',
+                            name: 'invoice_no'
+                        },
+                        {
                             data: 'date',
                             name: 'date'
                         },
@@ -259,7 +288,8 @@
                         $('#' + main_div + ' .price' + row).val(data.price);
 
                         // auto-fill the applicable offer (partner/product discount)
-                        if (data.discount && data.discount > 0 && (data.discount_type == 'percent' || data.discount_type == 'amount')) {
+                        if (data.discount && data.discount > 0 && (data.discount_type == 'percent' || data
+                                .discount_type == 'amount')) {
                             $('#' + main_div + ' .discount_type' + row).val(data.discount_type);
                             $('#' + main_div + ' .discount' + row).val(data.discount);
                         } else {
@@ -440,7 +470,7 @@
                             $('#createOrderForm .server_side_error').html(
                                 '<div class="alert alert-danger" role="alert">' + errorMessage +
                                 '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
-                                );
+                            );
                         },
                     })
                 }
@@ -544,7 +574,7 @@
                             $('#editOrderForm .server_side_error').html(
                                 '<div class="alert alert-danger" role="alert">' + errorMessage +
                                 '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
-                                );
+                            );
                         },
                     })
                 }
@@ -587,7 +617,7 @@
                         if ($('#viewOrderModal').length === 0) {
                             $('body').append(
                                 '<div class="modal fade" id="viewOrderModal" tabindex="-1" data-bs-backdrop="static"></div>'
-                                );
+                            );
                         }
                         $('#viewOrderModal').html(
                             '<div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">' +
@@ -641,7 +671,7 @@
                         $('#statusOrderForm .server_side_error').html(
                             '<div class="alert alert-danger" role="alert">' + errorMessage +
                             '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>'
-                            );
+                        );
                     },
                 })
             })

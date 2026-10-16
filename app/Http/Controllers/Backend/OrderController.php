@@ -45,6 +45,29 @@ class OrderController extends Controller
         return view('backend.pages.order.index', compact('category', 'brands', 'partners', 'products'));
     }
 
+    /**
+     * Merge duplicate order items (same product/part) into a single line:
+     * quantities and subtotals are summed, so an invoice shows one row per product.
+     */
+    private function mergeOrderDetails($details)
+    {
+        return $details->groupBy(function ($item) {
+            return $item->type . '|' . $item->product_id . '|' . $item->reference_id;
+        })->map(function ($group) {
+            if ($group->count() === 1) {
+                return $group->first();
+            }
+
+            $base = $group->first();
+            $merged = $base->replicate();
+            $merged->quantity = $group->sum('quantity');
+            $merged->subtotal = $group->sum('subtotal');
+            $merged->setRelation('product', $base->product);
+            $merged->setRelation('part', $base->part);
+            return $merged;
+        })->values();
+    }
+
     public function view($id)
     {
         $order = Order::find($id);
@@ -52,16 +75,21 @@ class OrderController extends Controller
             return response()->json(['error' => 'Order not found'], 404);
         }
 
-        $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
+        // Merge all orders that share this invoice (same user + same business window)
+        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product', 'part')->get();
+        $order_details = $this->mergeOrderDetails($order_details);
+        $group_total = Order::whereIn('id', $orderIds)->sum('total_price');
         $billing = json_decode($order->billing_information);
 
-        return view('backend.pages.order.view', compact('order', 'order_details', 'billing'));
+        return view('backend.pages.order.view', compact('order', 'order_details', 'billing', 'group_total'));
     }
 
     public function getList(Request $request)
     {
 
-        $data = Order::query()->with(['details.product', 'details.part', 'partnerCompany']);
+        $data = Order::query()->with(['details.product', 'details.part', 'partnerCompany'])
+            ->orderByDesc('created_at');
 
         if ($this->user->role == 2 || $this->user->role == 4 || $this->user->role == 5) {
             $data->where('user_id', $this->user->id);
@@ -90,32 +118,48 @@ class OrderController extends Controller
             });
         }
 
-        return Datatables::of($data)
-            ->editColumn('invoice_no', function ($row) {
-                return '<strong>#' . $row->invoice_no . '</strong>';
-            })
-            ->editColumn('user_id', function ($row) {
-                $company = $row->partnerCompany;
+        // Combine all orders that share an invoice (same user + same business window) into one row
+        $groups = $data->get()->groupBy('invoice_no');
 
-                if (!$company) {
-                    return '<span class="text-muted">-</span>';
-                }
+        $rows = [];
+        foreach ($groups as $group) {
+            $latest = $group->first(); // newest order of this invoice (list is sorted desc)
+            $company = $latest->partnerCompany;
+            $ordersCount = $group->count();
+            $total = $group->sum('total_price');
+            $status = $group->min('status'); // conservative: invoice is as new as its newest order
+            $details = $group->flatMap(function ($o) {
+                return $o->details;
+            })->values();
 
-                return '<div class="order-partner">'
+            // Merge duplicate items of the same product into one line (qty + subtotal summed)
+            $details = $this->mergeOrderDetails($details);
+
+            // Invoice column
+            $invoiceHtml = '<strong>#' . $latest->invoice_no . '</strong>';
+            if ($ordersCount > 1) {
+                $invoiceHtml .= '<span class="badge bg-info ms-1" title="Orders combined in this invoice">' . $ordersCount . ' orders</span>';
+            }
+
+            // Company column
+            if (!$company) {
+                $companyHtml = '<span class="text-muted">-</span>';
+            } else {
+                $companyHtml = '<div class="order-partner">'
                     . '<span class="d-block fw-bold text-truncate" title="' . e($company->name ?? '') . '">' . e($company->name ?? '-') . '</span>'
                     . '<small class="text-muted text-nowrap"><i class="fa-solid fa-phone"></i> ' . e($company->phone_number ?? '-') . '</small>'
                     . '</div>';
-            })
-            ->editColumn('products', function ($row) {
-                if ($row->details->isEmpty()) {
-                    return '<span class="text-muted">-</span>';
-                }
+            }
 
-                $count = $row->details->count();
+            // Products column (merged items of all orders in the invoice)
+            if ($details->isEmpty()) {
+                $productsHtml = '<span class="text-muted">-</span>';
+            } else {
+                $count = $details->count();
                 $collapsed = $count > 2;
 
                 $items = '';
-                foreach ($row->details as $i => $item) {
+                foreach ($details as $i => $item) {
                     $name = $item->product->name ?? $item->part->name ?? 'N/A';
                     $part = $item->part
                         ? '<small class="text-muted d-block text-truncate">Part: ' . e($item->part->name ?? 'N/A') . '</small>'
@@ -129,52 +173,58 @@ class OrderController extends Controller
                         . '</div></div>';
                 }
 
-                $html = '<div class="order-products">';
-                $html .= '<span class="badge bg-light text-dark border mb-1"><i class="fa-solid fa-box-open"></i> ' . $count . ' item' . ($count > 1 ? 's' : '') . '</span>';
-                $html .= $items;
+                $productsHtml = '<div class="order-products">';
+                $productsHtml .= '<span class="badge bg-light text-dark border mb-1"><i class="fa-solid fa-box-open"></i> ' . $count . ' item' . ($count > 1 ? 's' : '') . '</span>';
+                $productsHtml .= $items;
                 if ($collapsed) {
-                    $html .= '<a href="javascript:void(0)" class="toggle-items small fw-bold d-block mt-1">+ ' . ($count - 2) . ' more</a>';
+                    $productsHtml .= '<a href="javascript:void(0)" class="toggle-items small fw-bold d-block mt-1">+ ' . ($count - 2) . ' more</a>';
                 }
-                $html .= '</div>';
+                $productsHtml .= '</div>';
+            }
 
-                return $html;
-            })
-            ->editColumn('date', function ($row) {
-                return date('d M Y', strtotime($row->date));
-            })
-            ->editColumn('status', function ($row) {
-                if ($row->status == 0) {
-                    return '<span class="badge bg-warning w-80">New</span>';
-                } elseif ($row->status == 1) {
-                    return '<span class="badge bg-info w-80">Shipping</span>';
-                } elseif ($row->status == 2) {
-                    return '<span class="badge bg-success w-80">Delivered</span>';
-                } else {
-                    return '<span class="badge bg-danger w-80">Rejected</span>';
-                }
-            })
-            ->addColumn('action', function ($row) {
-                if ($this->user->role === 4 || $this->user->role === 5) {
-                    // For roles 4 and 5, show only view button
-                    return '<a href="" data-id="' . $row->id . '" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i> View</a>';
-                }
+            // Status column
+            if ($status == 0) {
+                $statusHtml = '<span class="badge bg-warning w-80">New</span>';
+            } elseif ($status == 1) {
+                $statusHtml = '<span class="badge bg-info w-80">Shipping</span>';
+            } elseif ($status == 2) {
+                $statusHtml = '<span class="badge bg-success w-80">Delivered</span>';
+            } else {
+                $statusHtml = '<span class="badge bg-danger w-80">Rejected</span>';
+            }
 
+            // Action column (latest order id represents the invoice)
+            $rowId = $latest->id;
+            if ($this->user->role === 4 || $this->user->role === 5) {
+                $btn = '<a href="" data-id="' . $rowId . '" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i> View</a>';
+            } else {
                 $btn = '';
-                $btn = $btn . '<a href="" data-id="' . $row->id . '" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i></a>';
-
-                // Add Invoice Button
-                $btn = $btn . '<a href="' . route('admin.order.invoice', $row->id) . '" class="btn btn-sm btn-success text-light mx-1" target="_blank"><i class="fa-solid fa-file-invoice"></i></a>';
+                $btn = $btn . '<a href="" data-id="' . $rowId . '" class="view_btn btn btn-sm btn-info text-light"><i class="fa-solid fa-eye"></i></a>';
+                $btn = $btn . '<a href="' . route('admin.order.invoice', $rowId) . '" class="btn btn-sm btn-success text-light mx-1" target="_blank"><i class="fa-solid fa-file-invoice"></i></a>';
 
                 if (Helper::hasRight('order.edit')) {
-                    $btn = $btn . '<a href="" data-id="' . $row->id . '" class="status_change_btn btn btn-sm btn-warning text-light mx-1"><i class="fa-solid fa-truck"></i></a>';
-                    $btn = $btn . '<a href="" data-id="' . $row->id . '" class="edit_btn btn btn-sm btn-primary mx-1"><i class="fa-solid fa-pencil"></i></a>';
+                    $btn = $btn . '<a href="" data-id="' . $rowId . '" class="status_change_btn btn btn-sm btn-warning text-light mx-1"><i class="fa-solid fa-truck"></i></a>';
+                    $btn = $btn . '<a href="" data-id="' . $rowId . '" class="edit_btn btn btn-sm btn-primary mx-1"><i class="fa-solid fa-pencil"></i></a>';
                 }
                 if (Helper::hasRight('order.delete')) {
-                    $btn = $btn . '<a class="delete_btn btn btn-sm btn-danger" data-id="' . $row->id . '" href=""><i class="fa fa-trash" aria-hidden="true"></i></a>';
+                    $btn = $btn . '<a class="delete_btn btn btn-sm btn-danger" data-id="' . $rowId . '" href=""><i class="fa fa-trash" aria-hidden="true"></i></a>';
                 }
-                return $btn;
-            })
-            ->rawColumns(['invoice_no', 'user_id', 'products', 'status', 'action'])->make(true);
+            }
+
+            $rows[] = [
+                'invoice_no' => $invoiceHtml,
+                'date' => date('d M Y', strtotime($latest->date)) . '<small class="text-muted d-block">' . $latest->created_at->timezone('Asia/Dhaka')->format('h:i A') . '</small>',
+                'user_id' => $companyHtml,
+                'products' => $productsHtml,
+                'total_price' => '৳' . number_format($total, 2),
+                'status' => $statusHtml,
+                'action' => $btn,
+            ];
+        }
+
+        return Datatables::of($rows)
+            ->rawColumns(['invoice_no', 'date', 'user_id', 'products', 'total_price', 'status', 'action'])
+            ->make(true);
     }
 
     public function row($number)
@@ -353,9 +403,12 @@ class OrderController extends Controller
     public function delete($id)
     {
         $order = Order::find($id);
-        if ($order->delete()) {
-            $details = OrderDetail::where('order_id', $id)->delete();
-            return json_encode(['success' => 'Order deleted successfully.']);
+        if ($order) {
+            // Delete the whole invoice group (all orders sharing this invoice)
+            $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+            OrderDetail::whereIn('order_id', $orderIds)->delete();
+            Order::whereIn('id', $orderIds)->delete();
+            return json_encode(['success' => 'Invoice deleted successfully.']);
         } else {
             return json_encode(['error' => 'Order not found.']);
         }
@@ -386,59 +439,64 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $oldStatus = $order->status;
+        // The invoice groups several orders — update the status of all of them together
+        $orders = Order::where('invoice_no', $order->invoice_no)->get();
         $newStatus = $request->status;
 
         DB::beginTransaction();
         try {
-            $order->status = $newStatus;
-            $order->save();
+            foreach ($orders as $order) {
+                $oldStatus = $order->status;
 
-            if ($newStatus == 2 && $oldStatus != 2) {
-                $orderDetails = OrderDetail::where('order_id', $order->id)->get();
+                $order->status = $newStatus;
+                $order->save();
 
-                foreach ($orderDetails as $item) {
-                    if ($item->type == 'product' && $item->quantity > 0) {
-                        $stock = ProductStock::firstOrCreate(
-                            ['product_id' => $item->product_id],
-                            ['quantity' => 0]
-                        );
+                if ($newStatus == 2 && $oldStatus != 2) {
+                    $orderDetails = OrderDetail::where('order_id', $order->id)->get();
 
-                        if ($stock->hasStock($item->quantity)) {
-                            $stock->removeStock(
-                                $item->quantity,
-                                'sale',
-                                $order->id,
-                                'Stock deducted for Delivered Order #' . $order->id
+                    foreach ($orderDetails as $item) {
+                        if ($item->type == 'product' && $item->quantity > 0) {
+                            $stock = ProductStock::firstOrCreate(
+                                ['product_id' => $item->product_id],
+                                ['quantity' => 0]
                             );
-                        } else {
-                            if ($stock->quantity > 0) {
+
+                            if ($stock->hasStock($item->quantity)) {
                                 $stock->removeStock(
-                                    $stock->quantity,
+                                    $item->quantity,
                                     'sale',
                                     $order->id,
-                                    'Partial deduction for Delivered Order #' . $order->id . ' (Capped at 0)'
+                                    'Stock deducted for Delivered Order #' . $order->id
                                 );
+                            } else {
+                                if ($stock->quantity > 0) {
+                                    $stock->removeStock(
+                                        $stock->quantity,
+                                        'sale',
+                                        $order->id,
+                                        'Partial deduction for Delivered Order #' . $order->id . ' (Capped at 0)'
+                                    );
+                                }
                             }
                         }
                     }
-                }
-            } elseif ($oldStatus == 2 && $newStatus != 2) {
-                $orderDetails = OrderDetail::where('order_id', $order->id)->get();
+                } elseif ($oldStatus == 2 && $newStatus != 2) {
+                    $orderDetails = OrderDetail::where('order_id', $order->id)->get();
 
-                foreach ($orderDetails as $item) {
-                    if ($item->type == 'product' && $item->quantity > 0) {
-                        $stock = ProductStock::firstOrCreate(
-                            ['product_id' => $item->product_id],
-                            ['quantity' => 0]
-                        );
+                    foreach ($orderDetails as $item) {
+                        if ($item->type == 'product' && $item->quantity > 0) {
+                            $stock = ProductStock::firstOrCreate(
+                                ['product_id' => $item->product_id],
+                                ['quantity' => 0]
+                            );
 
-                        $stock->addStock(
-                            $item->quantity,
-                            'return',
-                            $order->id,
-                            'Stock restored, Order #' . $order->id . ' status changed from Delivered'
-                        );
+                            $stock->addStock(
+                                $item->quantity,
+                                'return',
+                                $order->id,
+                                'Stock restored, Order #' . $order->id . ' status changed from Delivered'
+                            );
+                        }
                     }
                 }
             }
@@ -473,7 +531,10 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
+        // Merge all orders that share this invoice (same user + same business window)
+        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product', 'part')->get();
+        $order_details = $this->mergeOrderDetails($order_details);
         $billing = json_decode($order->billing_information);
 
         // total_price already includes item discounts (net payable) - no extra discount applied
@@ -492,7 +553,10 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        $order_details = OrderDetail::where('order_id', $id)->with('product', 'part')->get();
+        // Merge all orders that share this invoice (same user + same business window)
+        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product', 'part')->get();
+        $order_details = $this->mergeOrderDetails($order_details);
         $billing = json_decode($order->billing_information);
 
         // total_price already includes item discounts (net payable) - no extra discount applied
@@ -516,7 +580,10 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        $order_details = OrderDetail::where('order_id', $id)->with('product.category', 'part')->get();
+        // Merge all orders that share this invoice (same user + same business window)
+        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product.category', 'part')->get();
+        $order_details = $this->mergeOrderDetails($order_details);
         $billing = json_decode($order->billing_information);
 
         // total_price already includes item discounts (net payable) - no extra discount applied
