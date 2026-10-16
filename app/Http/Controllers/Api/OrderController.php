@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -86,6 +87,9 @@ class OrderController extends Controller
             }
 
             DB::commit();
+
+            // Notify backend users about the new order
+            UserNotification::notifyNewOrder($order);
 
             return response()->json([
                 'type' => 'success',

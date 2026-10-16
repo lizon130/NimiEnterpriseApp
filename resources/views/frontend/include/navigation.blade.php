@@ -609,6 +609,23 @@
                     {{ count(session('wishlist') ?? []) }}
                 </span>
             </a>
+            @if (Auth::user())
+                <div class="user-notification-bell mobile-icon-btn unotif-mobile">
+                    <button class="unotif-btn" type="button" aria-label="Notifications">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge badge-secondary unotif-badge d-none">0</span>
+                    </button>
+                    <div class="unotif-dropdown">
+                        <div class="unotif-header">
+                            <strong><i class="fa-solid fa-bell me-1"></i> Notifications</strong>
+                            <a href="javascript:void(0)" class="userNotifMarkAll">Mark all as read</a>
+                        </div>
+                        <div class="unotif-list userNotifList">
+                            <div class="unotif-empty">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
 
         <nav id="navbar" class="navbar">
@@ -680,6 +697,24 @@
                 </li>
 
                 @if (Auth::user())
+                    <li class="hide-on-mobile">
+                        <div class="user-notification-bell">
+                            <button class="unotif-btn nav-link header__icon-size" type="button"
+                                aria-label="Notifications">
+                                <i class="fa-solid fa-bell wish_cart--icon"></i>
+                                <span class="badge badge-secondary unotif-badge d-none">0</span>
+                            </button>
+                            <div class="unotif-dropdown">
+                                <div class="unotif-header">
+                                    <strong><i class="fa-solid fa-bell me-1"></i> Notifications</strong>
+                                    <a href="javascript:void(0)" class="userNotifMarkAll">Mark all as read</a>
+                                </div>
+                                <div class="unotif-list userNotifList">
+                                    <div class="unotif-empty">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </li>
                     <li><a class="getstarted scrollto"
                             href="{{ route('admin.index') }}">{{ trans('language.dashboard') }}</a></li>
                 @else
@@ -813,5 +848,265 @@
                 console.log('Language selected:', lang);
             }
         });
+    });
+</script>
+
+{{-- ================= User Notification Bell ================= --}}
+<style>
+    .user-notification-bell {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .user-notification-bell .unotif-btn {
+        position: relative;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: inherit;
+        padding: 8px 6px;
+    }
+
+    .unotif-badge {
+        position: absolute;
+        top: 0;
+        right: -4px;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: #e74a3b;
+        color: #fff;
+        font-size: 10.5px;
+        font-weight: 700;
+        line-height: 17px;
+        text-align: center;
+    }
+
+    .unotif-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        width: 350px;
+        max-width: 92vw;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 14px 40px rgba(15, 23, 42, .18);
+        z-index: 2050;
+        overflow: hidden;
+        text-align: left;
+    }
+
+    .unotif-dropdown.open {
+        display: block;
+    }
+
+    .unotif-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 11px 14px;
+        background: #f8f9fc;
+        border-bottom: 1px solid #eee;
+    }
+
+    .unotif-header strong {
+        font-size: 14px;
+        color: #333;
+    }
+
+    .unotif-header a {
+        font-size: 12px;
+        color: #f85606;
+        text-decoration: none;
+    }
+
+    .unotif-list {
+        max-height: 330px;
+        overflow-y: auto;
+    }
+
+    .unotif-item {
+        padding: 10px 14px;
+        border-bottom: 1px solid #f3f4f6;
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+
+    .unotif-item:hover {
+        background: #fff3ec;
+    }
+
+    .unotif-item.unread {
+        background: #fff8f3;
+    }
+
+    .unotif-item-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .unotif-item-msg {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+    }
+
+    .unotif-item-time {
+        font-size: 10.5px;
+        color: #9ca3af;
+        margin-top: 3px;
+    }
+
+    .unotif-empty {
+        padding: 26px 10px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 13px;
+    }
+
+    /* Mobile: full width notification panel below header */
+    @media (max-width: 991px) {
+        .unotif-dropdown {
+            position: fixed;
+            top: 64px;
+            left: 10px;
+            right: 10px;
+            width: auto;
+            max-width: none;
+        }
+    }
+</style>
+
+<div class="modal fade" id="userNoticeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border: none; border-radius: 18px; overflow: hidden; box-shadow: 0 24px 60px rgba(15,23,42,.28);">
+            <div style="position: relative; padding: 32px 20px 24px; background: linear-gradient(135deg, #f85606, #ff8a00); text-align: center;">
+                <button type="button" style="position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border: none; border-radius: 50%; background: rgba(255,255,255,.25); color: #fff; font-size: 16px;" data-bs-dismiss="modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+                <div style="width: 58px; height: 58px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,.22); border: 2px solid rgba(255,255,255,.55); color: #fff; font-size: 24px;"><i class="fa-solid fa-bullhorn"></i></div>
+                <div style="color: rgba(255,255,255,.92); font-size: 12px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase;">Notice</div>
+            </div>
+            <div style="padding: 22px 24px 8px; text-align: center;">
+                <div id="userNoticeModalTitle" style="color: #0f172a; font-size: 19px; font-weight: 700; line-height: 1.35; margin-bottom: 10px;"></div>
+                <p id="userNoticeModalMessage" style="color: #374151; font-size: 15px; line-height: 1.65; white-space: pre-line; margin: 0;"></p>
+            </div>
+            <div class="modal-footer" style="border-top: none; justify-content: center; padding: 18px 24px 24px;">
+                <button type="button" class="btn" style="min-width: 150px; border-radius: 10px; padding: 10px 20px; background: linear-gradient(135deg, #f85606, #ff8a00); color: #fff; font-weight: 600; box-shadow: 0 8px 20px rgba(248,86,6,.32);" data-bs-dismiss="modal">Understood</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var bells = document.querySelectorAll('.user-notification-bell');
+        if (bells.length === 0) return;
+
+        function renderUserNotifications(res) {
+            var count = res.unread_count || 0;
+
+            // Update all badge instances (desktop + mobile)
+            document.querySelectorAll('.unotif-badge').forEach(function (badge) {
+                if (count > 0) {
+                    badge.classList.remove('d-none');
+                    badge.textContent = count > 99 ? '99+' : count;
+                } else {
+                    badge.classList.add('d-none');
+                }
+            });
+
+            var list = res.notifications || [];
+            var html = '';
+            if (list.length === 0) {
+                html = '<div class="unotif-empty">No notifications yet.</div>';
+            } else {
+                list.forEach(function (n) {
+                    var icon = n.type === 'order' ? 'fa-cart-shopping' : 'fa-bullhorn';
+                    var color = n.type === 'order' ? '#f85606' : '#2563eb';
+                    html += '<div class="unotif-item ' + (n.is_read == 0 ? 'unread' : '') + '" data-id="' + n.id + '">'
+                        + '<div class="unotif-item-title"><i class="fa-solid ' + icon + '" style="color:' + color + '"></i> ' + n.title + '</div>'
+                        + '<div class="unotif-item-msg">' + n.message + '</div>'
+                        + '<div class="unotif-item-time"><i class="fa-regular fa-clock"></i> ' + n.time + '</div>'
+                        + '</div>';
+                });
+            }
+
+            // Update all list instances (desktop + mobile)
+            document.querySelectorAll('.userNotifList').forEach(function (listEl) {
+                listEl.innerHTML = html;
+            });
+        }
+
+        function loadUserNotifications() {
+            jQuery.get('{{ url('user/notifications') }}', function (res) {
+                renderUserNotifications(res);
+            });
+        }
+
+        // Toggle dropdown (works for every bell instance)
+        bells.forEach(function (bell) {
+            var btn = bell.querySelector('.unotif-btn');
+            if (!btn) return;
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var dropdown = bell.querySelector('.unotif-dropdown');
+                if (!dropdown) return;
+                // Close others first
+                document.querySelectorAll('.unotif-dropdown.open').forEach(function (d) {
+                    if (d !== dropdown) d.classList.remove('open');
+                });
+                dropdown.classList.toggle('open');
+                if (dropdown.classList.contains('open')) {
+                    loadUserNotifications();
+                }
+            });
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', function (e) {
+            document.querySelectorAll('.user-notification-bell').forEach(function (bell) {
+                if (!bell.contains(e.target)) {
+                    var dropdown = bell.querySelector('.unotif-dropdown');
+                    if (dropdown) dropdown.classList.remove('open');
+                }
+            });
+        });
+
+        // Item click: mark read + show notice in modal
+        document.addEventListener('click', function (e) {
+            var item = e.target.closest ? e.target.closest('.unotif-item') : null;
+            if (!item) return;
+            var id = item.getAttribute('data-id');
+            jQuery.get('{{ url('user/notification/read') }}/' + id, function (res) {
+                if (res.type === 'success') {
+                    document.getElementById('userNoticeModalTitle').textContent = res.title;
+                    document.getElementById('userNoticeModalMessage').textContent = res.message;
+                    var modalEl = document.getElementById('userNoticeModal');
+                    var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                    modal.show();
+                    loadUserNotifications();
+                }
+            });
+        });
+
+        // Mark all as read
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.classList && e.target.classList.contains('userNotifMarkAll')) {
+                e.preventDefault();
+                jQuery.get('{{ url('user/notification/read-all') }}', function () {
+                    loadUserNotifications();
+                });
+            }
+        });
+
+        loadUserNotifications();
+        setInterval(loadUserNotifications, 60000);
     });
 </script>

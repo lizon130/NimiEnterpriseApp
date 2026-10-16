@@ -8,6 +8,7 @@ use Yajra\DataTables\DataTables;
 use Auth;
 use Helper;
 use App\Models\Notice;
+use App\Models\UserNotification;
 use Illuminate\Support\Facades\Cache;
 
 class NoticeController extends Controller
@@ -83,6 +84,12 @@ class NoticeController extends Controller
 
         if ($notice->save()) {
             Cache::forget('active_notice');
+
+            // Notify frontend users about the new active notice
+            if ($notice->status == 1) {
+                UserNotification::notifyNotice($notice);
+            }
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Notice created successfully.',
@@ -116,12 +123,20 @@ class NoticeController extends Controller
             ]);
         }
 
+        $wasInactiveBefore = ($notice->status != 1);
+
         $notice->title = $request->title;
         $notice->description = $request->description;
         $notice->status = ($request->status) ? 1 : 0;
 
         if ($notice->save()) {
             Cache::forget('active_notice');
+
+            // Notify frontend users when a notice becomes active
+            if ($notice->status == 1 && $wasInactiveBefore) {
+                UserNotification::notifyNotice($notice);
+            }
+
             return response()->json([
                 'type' => 'success',
                 'message' => 'Notice updated successfully.',

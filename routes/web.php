@@ -10,6 +10,7 @@ use App\Http\Controllers\Backend\DashboardController;
 use App\Http\Controllers\Backend\InquiryController;
 use App\Http\Controllers\Backend\NewsController;
 use App\Http\Controllers\Backend\NoticeController;
+use App\Http\Controllers\Backend\NotificationController;
 use App\Http\Controllers\Backend\OrderController;
 use App\Http\Controllers\Backend\PartController;
 use App\Http\Controllers\Backend\PartnerController;
@@ -25,6 +26,7 @@ use App\Http\Controllers\Backend\TransactionController;
 use App\Http\Controllers\Backend\UserController;
 use App\Http\Controllers\Backend\WholesaleCalculationController;
 use App\Http\Controllers\FrontendController;
+use App\Http\Controllers\UserNotificationController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -134,6 +136,11 @@ Route::controller(FrontendController::class)->group(function () {
 Route::controller(FrontendController::class)->middleware('auth')->group(function () {
     Route::get('/', 'allProducts')->name('home');
     Route::get('/bot', 'bot')->name('bot');
+
+    // User notifications
+    Route::get('user/notifications', [UserNotificationController::class, 'list'])->name('user.notifications');
+    Route::get('user/notification/read/{id}', [UserNotificationController::class, 'read'])->name('user.notification.read');
+    Route::get('user/notification/read-all', [UserNotificationController::class, 'readAll'])->name('user.notification.readall');
     Route::get('data', 'data');
     Route::get('about', 'about')->name('about-us');
     Route::get('contact', 'contact')->name('contact-us');
@@ -310,6 +317,12 @@ Route::group(['prefix' => 'admin', 'middleware' => 'auth'], function () {
         Route::get('/edit/{id}', [NoticeController::class, 'edit'])->name('admin.notice.edit');
         Route::any('/update/{id}', [NoticeController::class, 'update'])->name('admin.notice.update');
         Route::get('/delete/{id}', [NoticeController::class, 'delete'])->name('admin.notice.delete');
+    });
+
+    Route::group(['prefix' => '/notification'], function () {
+        Route::get('/list', [NotificationController::class, 'list'])->name('admin.notification.list');
+        Route::get('/read/{id}', [NotificationController::class, 'read'])->name('admin.notification.read');
+        Route::get('/read-all', [NotificationController::class, 'readAll'])->name('admin.notification.readall');
     });
 
     // Add inside admin middleware group

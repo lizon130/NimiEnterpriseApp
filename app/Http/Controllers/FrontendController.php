@@ -21,6 +21,7 @@ use App\Models\ServiceOrder;
 use App\Models\News;
 use App\Models\Notice;
 use App\Models\Catalogue;
+use App\Models\UserNotification;
 use App\Models\Company;
 use App\Models\ProductPart;
 use App\Models\PartAttribute;
@@ -1183,6 +1184,9 @@ class FrontendController extends Controller
             }
             $request->session()->forget('cartlist');
 
+            // Notify backend users about the new order
+            UserNotification::notifyNewOrder($order);
+
             return redirect()->back()->with('message', 'Order place successfully!');
         } else {
             return redirect()->back()->with('error', 'Something went wrong!');
@@ -1409,6 +1413,9 @@ class FrontendController extends Controller
                     $order_detail->save();
                 }
                 $request->session()->forget('cartlist');
+
+                // Notify backend users about the new order
+                UserNotification::notifyNewOrder($order);
 
                 if ($responseCode == '00') {
                     $update_order = Order::find($order->id);
