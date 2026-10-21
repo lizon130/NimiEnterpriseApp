@@ -3143,7 +3143,15 @@ $brandStripAll = $brands
     {{-- Active Notice Popup --}}
     @if (!empty($activeNotice))
         <style>
+            #siteNoticeModal .modal-dialog {
+                margin: 12px auto;
+                max-width: 520px;
+            }
             #siteNoticeModal .modal-content {
+                display: flex;
+                flex-direction: column;
+                max-height: calc(100vh - 24px);
+                max-height: calc(100dvh - 24px);
                 border: none;
                 border-radius: 18px;
                 overflow: hidden;
@@ -3151,6 +3159,7 @@ $brandStripAll = $brands
             }
             #siteNoticeModal .snm-header {
                 position: relative;
+                flex-shrink: 0;
                 padding: 34px 20px 26px;
                 background: linear-gradient(135deg, #f85606, #ff8a00);
                 text-align: center;
@@ -3207,6 +3216,10 @@ $brandStripAll = $brands
             }
             #siteNoticeModal .snm-close:hover { background: rgba(255, 255, 255, .45); }
             #siteNoticeModal .snm-body {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
                 padding: 22px 24px 8px;
                 text-align: center;
             }
@@ -3225,6 +3238,7 @@ $brandStripAll = $brands
                 margin-bottom: 0;
             }
             #siteNoticeModal .snm-footer {
+                flex-shrink: 0;
                 padding: 18px 24px 24px;
                 border-top: none;
                 justify-content: center;
@@ -3246,14 +3260,21 @@ $brandStripAll = $brands
                 box-shadow: 0 12px 26px rgba(248, 86, 6, .40);
             }
             @media (max-width: 480px) {
-                #siteNoticeModal .modal-dialog { margin: 12px; }
-                #siteNoticeModal .snm-header { padding: 28px 16px 20px; }
+                #siteNoticeModal .modal-dialog {
+                    margin: 10px;
+                    max-width: calc(100% - 20px);
+                }
+                #siteNoticeModal .modal-content {
+                    max-height: calc(100dvh - 20px);
+                    border-radius: 14px;
+                }
+                #siteNoticeModal .snm-header { padding: 24px 14px 18px; }
                 #siteNoticeModal .snm-title { font-size: 17px; }
                 #siteNoticeModal .snm-text { font-size: 14px; }
             }
         </style>
         <div class="modal fade" id="siteNoticeModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="true">
-            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="snm-header">
                         <button type="button" class="snm-close" data-bs-dismiss="modal" aria-label="Close">
@@ -3267,7 +3288,7 @@ $brandStripAll = $brands
                         <p class="snm-text">{{ $activeNotice->description }}</p>
                     </div>
                     <div class="modal-footer snm-footer">
-                        <button type="button" class="btn snm-btn" data-bs-dismiss="modal">Understood</button>
+                        <button type="button" class="btn snm-btn" data-bs-dismiss="modal">I understand</button>
                     </div>
                 </div>
             </div>
