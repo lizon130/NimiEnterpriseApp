@@ -48,18 +48,17 @@ class Order extends Model
     }
 
     /**
-     * Business day windows (Bangladesh time, UTC+6):
-     *   Window 1: 00:00 (midnight) to 13:59  -> all orders share one invoice
-     *   Window 2: 14:00 (2 PM) to 23:59      -> separate invoice
-     * Orders of the same user inside the same window reuse one invoice number.
+     * Business day window (Bangladesh time, UTC+6):
+     *   Window: 14:00 (2 PM) to next day 13:59 (2 PM to 2 PM rolling window)
+     * All orders of the same user inside the same 2PM-to-2PM window share one invoice.
      */
     public static function generateInvoiceNumber($userId = null)
     {
         $nowBd = now()->timezone('Asia/Dhaka');
 
-        // Window start in BD time: 00:00 or 14:00
+        // Window start in BD time: today 14:00 if at/after 2 PM, else yesterday 14:00
         $windowStartBd = ($nowBd->format('H') < 14)
-            ? $nowBd->copy()->startOfDay()
+            ? $nowBd->copy()->subDay()->setTime(14, 0, 0)
             : $nowBd->copy()->setTime(14, 0, 0);
 
         // Convert back to app timezone for comparing with created_at
