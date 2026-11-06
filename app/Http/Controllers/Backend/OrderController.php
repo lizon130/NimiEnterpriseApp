@@ -219,6 +219,10 @@ class OrderController extends Controller
             }
 
             $rows[] = [
+                // Hidden sort key: timestamp of the invoice's latest order.
+                // Keeps the list truly newest-first even when an invoice number
+                // was reused across the 2PM-2PM business window.
+                'created_ts' => $latest->created_at->timestamp,
                 'invoice_no' => $invoiceHtml,
                 'date' => date('d M Y', strtotime($latest->date)) . '<small class="text-muted d-block">' . $latest->created_at->timezone('Asia/Dhaka')->format('h:i A') . '</small>',
                 'user_id' => $companyHtml,
@@ -228,6 +232,13 @@ class OrderController extends Controller
                 'action' => $btn,
             ];
         }
+
+        // Newest invoice first: sort by the timestamp of each invoice's latest order.
+        // (Invoice number alone can't be used — the 2PM-2PM window reuses numbers
+        // across days, so a lower number can hold a newer order.)
+        usort($rows, function ($a, $b) {
+            return $b['created_ts'] <=> $a['created_ts'];
+        });
 
         return Datatables::of($rows)
             ->rawColumns(['invoice_no', 'date', 'user_id', 'products', 'total_price', 'status', 'action'])

@@ -121,6 +121,7 @@
                     responsive: true,
                     processing: true,
                     serverSide: true,
+                    ordering: false, // list is pre-sorted server-side (newest invoice first)
                     ajax: {
                         url: "{{ url('admin/order/get/list') }}",
                         type: 'GET',
@@ -131,9 +132,6 @@
                         },
                     },
                     // ... (other DataTable settings)
-                    "order": [
-                        [0, 'desc']
-                    ],
                     columns: [{
                             data: 'invoice_no',
                             name: 'invoice_no'
