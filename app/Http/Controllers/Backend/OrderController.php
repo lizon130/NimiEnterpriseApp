@@ -75,8 +75,11 @@ class OrderController extends Controller
             return response()->json(['error' => 'Order not found'], 404);
         }
 
-        // Merge all orders that share this invoice (same user + same business window)
-        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        // Merge all orders that share this invoice, scoped to the same user
+        // to prevent a collision from leaking another user's order details.
+        $orderIds = Order::where('invoice_no', $order->invoice_no)
+            ->where('user_id', $order->user_id)
+            ->pluck('id');
         $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product', 'part')->get();
         $order_details = $this->mergeOrderDetails($order_details);
         $group_total = Order::whereIn('id', $orderIds)->sum('total_price');
@@ -118,8 +121,12 @@ class OrderController extends Controller
             });
         }
 
-        // Combine all orders that share an invoice (same user + same business window) into one row
-        $groups = $data->get()->groupBy('invoice_no');
+        // Combine all orders that share an invoice (same user + same business window) into one row.
+        // Group by BOTH invoice_no AND user_id so that if two different users ever ended up
+        // with the same invoice number (collision bug), their orders are never shown merged.
+        $groups = $data->get()->groupBy(function ($order) {
+            return $order->invoice_no . '||' . $order->user_id;
+        });
 
         $rows = [];
         foreach ($groups as $group) {
@@ -404,8 +411,10 @@ class OrderController extends Controller
     {
         $order = Order::find($id);
         if ($order) {
-            // Delete the whole invoice group (all orders sharing this invoice)
-            $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+            // Delete only the orders of this user sharing this invoice number
+            $orderIds = Order::where('invoice_no', $order->invoice_no)
+                ->where('user_id', $order->user_id)
+                ->pluck('id');
             OrderDetail::whereIn('order_id', $orderIds)->delete();
             Order::whereIn('id', $orderIds)->delete();
             return json_encode(['success' => 'Invoice deleted successfully.']);
@@ -439,8 +448,11 @@ class OrderController extends Controller
             ], 404);
         }
 
-        // The invoice groups several orders — update the status of all of them together
-        $orders = Order::where('invoice_no', $order->invoice_no)->get();
+        // The invoice groups several orders — update the status of all of them together,
+        // scoped to the same user to avoid touching another user's orders on collision.
+        $orders = Order::where('invoice_no', $order->invoice_no)
+            ->where('user_id', $order->user_id)
+            ->get();
         $newStatus = $request->status;
 
         DB::beginTransaction();
@@ -531,8 +543,10 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        // Merge all orders that share this invoice (same user + same business window)
-        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        // Merge all orders that share this invoice, scoped to the same user
+        $orderIds = Order::where('invoice_no', $order->invoice_no)
+            ->where('user_id', $order->user_id)
+            ->pluck('id');
         $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product', 'part')->get();
         $order_details = $this->mergeOrderDetails($order_details);
         $billing = json_decode($order->billing_information);
@@ -553,8 +567,10 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        // Merge all orders that share this invoice (same user + same business window)
-        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        // Merge all orders that share this invoice, scoped to the same user
+        $orderIds = Order::where('invoice_no', $order->invoice_no)
+            ->where('user_id', $order->user_id)
+            ->pluck('id');
         $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product', 'part')->get();
         $order_details = $this->mergeOrderDetails($order_details);
         $billing = json_decode($order->billing_information);
@@ -580,8 +596,10 @@ class OrderController extends Controller
             abort(404, 'Order not found');
         }
 
-        // Merge all orders that share this invoice (same user + same business window)
-        $orderIds = Order::where('invoice_no', $order->invoice_no)->pluck('id');
+        // Merge all orders that share this invoice, scoped to the same user
+        $orderIds = Order::where('invoice_no', $order->invoice_no)
+            ->where('user_id', $order->user_id)
+            ->pluck('id');
         $order_details = OrderDetail::whereIn('order_id', $orderIds)->with('product.category', 'part')->get();
         $order_details = $this->mergeOrderDetails($order_details);
         $billing = json_decode($order->billing_information);

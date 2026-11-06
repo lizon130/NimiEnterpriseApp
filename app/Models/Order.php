@@ -51,6 +51,10 @@ class Order extends Model
      * Business day window (Bangladesh time, UTC+6):
      *   Window: 14:00 (2 PM) to next day 13:59 (2 PM to 2 PM rolling window)
      * All orders of the same user inside the same 2PM-to-2PM window share one invoice.
+     *
+     * A DB-level lock (lockForUpdate) is used when generating a new sequential number
+     * so that two users placing their very first order at the same instant cannot
+     * receive the same invoice number.
      */
     public static function generateInvoiceNumber($userId = null)
     {
@@ -64,7 +68,8 @@ class Order extends Model
         // Convert back to app timezone for comparing with created_at
         $windowStart = $windowStartBd->timezone(config('app.timezone'));
 
-        // If this user already ordered in the current window, reuse that invoice
+        // If this user already ordered in the current window, reuse that invoice.
+        // Scope strictly to this user so two different users never share an invoice.
         if ($userId) {
             $existing = self::where('user_id', $userId)
                 ->where('created_at', '>=', $windowStart)
@@ -76,19 +81,22 @@ class Order extends Model
             }
         }
 
-        // Otherwise generate the next sequential invoice number of the year
+        // Otherwise generate the next sequential invoice number of the year.
+        // Lock the row so concurrent inserts cannot read the same "last" number and
+        // produce a duplicate invoice number for two different users.
         $year = date('Y');
         $lastOrder = self::whereYear('created_at', $year)
-            ->orderBy('created_at', 'desc')
+            ->orderByDesc('created_at')
+            ->lockForUpdate()
             ->first();
 
         if ($lastOrder && $lastOrder->invoice_no) {
-            // Extract the number from invoice_no
+            // Extract the trailing number from e.g. "Nimi-2026/013"
             preg_match('/\/(\d+)$/', $lastOrder->invoice_no, $matches);
             $lastNumber = isset($matches[1]) ? intval($matches[1]) : 0;
-            $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
         } else {
-            $newNumber = '001';
+            $newNumber = '0001';
         }
 
         return 'Nimi-' . $year . '/' . $newNumber;
@@ -113,10 +121,12 @@ class Order extends Model
     }
 
     /**
-     * All orders sharing the same invoice number (same user + same business window).
+     * All orders sharing the same invoice number AND same user (same business window).
+     * Scoping by user_id prevents a collision from leaking another user's orders.
      */
     public function sameInvoice()
     {
-        return $this->hasMany(Order::class, 'invoice_no', 'invoice_no');
+        return $this->hasMany(Order::class, 'invoice_no', 'invoice_no')
+            ->where('user_id', $this->user_id);
     }
 }

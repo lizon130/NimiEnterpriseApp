@@ -1134,13 +1134,6 @@ class FrontendController extends Controller
         $specialDiscount = $this->calculateSpecialOrderDiscount($total_price);
         $total_price = round($total_price - $specialDiscount, 2);
 
-        $order = new Order();
-        $order->user_id = Auth::user()->id;
-        $order->date = date('Y-m-d');
-        $order->total_price = $total_price;
-        $order->payment_status = 0;
-        $order->payment_method = '';
-        $order->note = $responseValues['COMMENT1'] ?? '';
         $company = Company::where('user_id', Auth::user()->id)->first();
         $billing_information = [
             'company' => $company->name ?? '',
@@ -1154,37 +1147,47 @@ class FrontendController extends Controller
             'country' => Helper::getCountrynameByCode($request->country)
         ];
 
-        $order->billing_information = json_encode($billing_information);
+        try {
+            DB::transaction(function () use ($request, $cartlistItems, $total_price, $billing_information) {
+                $order = new Order();
+                $order->user_id = Auth::user()->id;
+                $order->date = date('Y-m-d');
+                $order->total_price = $total_price;
+                $order->payment_status = 0;
+                $order->payment_method = '';
+                $order->note = $request->note ?? '';
+                $order->billing_information = json_encode($billing_information);
+                $order->save();
 
-        if ($order->save()) {
-            $order->refresh();
-            foreach ($cartlistItems as $item) {
-                $order_detail = new OrderDetail();
-                $order_detail->order_id  = $order->id;
-                $order_detail->product_id = $item['product']['id'];
-                $order_detail->reference_id = $item['product']['id'];
-                $order_detail->type = $item['type'];
-                $order_detail->quantity = $item['quantity'];
+                $order->refresh();
+                foreach ($cartlistItems as $item) {
+                    $order_detail = new OrderDetail();
+                    $order_detail->order_id  = $order->id;
+                    $order_detail->product_id = $item['product']['id'];
+                    $order_detail->reference_id = $item['product']['id'];
+                    $order_detail->type = $item['type'];
+                    $order_detail->quantity = $item['quantity'];
 
-                if ($item['type'] == 'product') {
-                    $order_detail->unit_price = Helper::priceAfterOffer($item['product']['id']);
-                } else {
-                    $order_detail->unit_price = Helper::partPriceFaterOffer($item['product']['id']);
+                    if ($item['type'] == 'product') {
+                        $order_detail->unit_price = Helper::priceAfterOffer($item['product']['id']);
+                    } else {
+                        $order_detail->unit_price = Helper::partPriceFaterOffer($item['product']['id']);
+                    }
+
+                    $order_detail->discount_type = $item['product']['discount_type'] ?? '';
+                    $order_detail->discount = $item['product']['discount'];
+                    if ($item['type'] == 'product') {
+                        $order_detail->subtotal = $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
+                    } else {
+                        $order_detail->subtotal = $item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id']));
+                    }
+                    $order_detail->save();
                 }
+            });
 
-                $order_detail->discount_type = $item['product']['discount_type'] ?? '';
-                $order_detail->discount = $item['product']['discount'];
-                if ($item['type'] == 'product') {
-                    $order_detail->subtotal = $item['quantity'] * (Helper::priceAfterOffer($item['product']['id']));
-                } else {
-                    $order_detail->subtotal = $item['quantity'] * (Helper::partPriceFaterOffer($item['product']['id']));
-                }
-                $order_detail->save();
-            }
             $request->session()->forget('cartlist');
-
             return redirect()->back()->with('message', 'Order place successfully!');
-        } else {
+        } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Something went wrong!');
         }
     }
@@ -1360,14 +1363,7 @@ class FrontendController extends Controller
             $specialDiscount = $this->calculateSpecialOrderDiscount($total_price);
             $total_price = round($total_price - $specialDiscount, 2);
 
-            $order = new Order();
-            $order->id = $responseValues['ORDER_ID'];
-            $order->user_id = Auth::user()->id;
-            $order->date = date('Y-m-d');
-            $order->total_price = $total_price;
-            $order->payment_status = 0;
-            $order->payment_method = '';
-            $order->note = $responseValues['COMMENT1'] ?? '';
+            $hppOrderId = $responseValues['ORDER_ID'];
             $company = Company::where('user_id', Auth::user()->id)->first();
             $billing_information = [
                 'company' => $company->name ?? '',
@@ -1380,11 +1376,24 @@ class FrontendController extends Controller
                 'state' => $responseValues['HPP_SHIPPING_STATE'],
                 'country' => Helper::getCountrynameByCode($responseValues['HPP_SHIPPING_COUNTRY'])
             ];
+            $note = $responseValues['COMMENT1'] ?? '';
 
-            $order->billing_information = json_encode($billing_information);
-
-            if ($order->save()) {
+            $savedOrder = DB::transaction(function () use (
+                $hppOrderId, $cartlistItems, $total_price, $billing_information,
+                $note, $responseCode, $variable, $authorizedAmount, $responseJson
+            ) {
+                $order = new Order();
+                $order->id = $hppOrderId;
+                $order->user_id = Auth::user()->id;
+                $order->date = date('Y-m-d');
+                $order->total_price = $total_price;
+                $order->payment_status = 0;
+                $order->payment_method = '';
+                $order->note = $note;
+                $order->billing_information = json_encode($billing_information);
+                $order->save();
                 $order->refresh();
+
                 foreach ($cartlistItems as $item) {
                     $order_detail = new OrderDetail();
                     $order_detail->order_id  = $order->id;
@@ -1408,14 +1417,12 @@ class FrontendController extends Controller
                     }
                     $order_detail->save();
                 }
-                $request->session()->forget('cartlist');
 
                 if ($responseCode == '00') {
-                    $update_order = Order::find($order->id);
-                    $update_order->payment_method = 'Online payment';
-                    $update_order->transaction_id = $variable->transactionId;
-                    $update_order->payment_status = 1;
-                    $update_order->save();
+                    $order->payment_method = 'Online payment';
+                    $order->transaction_id = $variable->transactionId;
+                    $order->payment_status = 1;
+                    $order->save();
 
                     $transaction = new Transaction();
                     $transaction->order_id = $order->id;
@@ -1424,10 +1431,9 @@ class FrontendController extends Controller
                     $transaction->response = $responseJson;
                     $transaction->save();
                 } else {
-                    $update_order = Order::find($order->id);
-                    $update_order->payment_method = 'Online payment';
-                    $update_order->transaction_id = $variable->transactionId;
-                    $update_order->save();
+                    $order->payment_method = 'Online payment';
+                    $order->transaction_id = $variable->transactionId;
+                    $order->save();
 
                     $transaction = new Transaction();
                     $transaction->order_id = $order->id;
@@ -1438,8 +1444,11 @@ class FrontendController extends Controller
                     $transaction->save();
                 }
 
-                return redirect()->back()->with('message', 'Order place successfully!');
-            }
+                return $order;
+            });
+
+            $request->session()->forget('cartlist');
+            return redirect()->back()->with('message', 'Order place successfully!');
         } catch (ApiException $e) {
             return $e;
             // For example if the SHA1HASH doesn't match what is expected
