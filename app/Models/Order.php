@@ -51,10 +51,8 @@ class Order extends Model
      * Business day window (Bangladesh time, UTC+6):
      *   Window: 14:00 (2 PM) to next day 13:59 (2 PM to 2 PM rolling window)
      * All orders of the same user inside the same 2PM-to-2PM window share one invoice.
-     *
-     * A DB-level lock (lockForUpdate) is used when generating a new sequential number
-     * so that two users placing their very first order at the same instant cannot
-     * receive the same invoice number.
+     * New numbers are issued from the MAX number of the year (never from the
+     * latest order's number, which may be an old number reused by the window).
      */
     public static function generateInvoiceNumber($userId = null)
     {
@@ -82,24 +80,22 @@ class Order extends Model
         }
 
         // Otherwise generate the next sequential invoice number of the year.
-        // Lock the row so concurrent inserts cannot read the same "last" number and
-        // produce a duplicate invoice number for two different users.
+        // IMPORTANT: base the next number on the MAX number ever issued in the
+        // year — NOT on the latest order's number. The latest order may carry an
+        // OLD number that was reused by the 2PM-2PM window logic, and incrementing
+        // it would re-issue a number another user already has (duplicate invoice).
         $year = date('Y');
-        $lastOrder = self::whereYear('created_at', $year)
-            ->orderByDesc('created_at')
-            ->lockForUpdate()
-            ->first();
+        $maxNumber = (int) self::whereYear('created_at', $year)
+            ->selectRaw("COALESCE(MAX(CAST(SUBSTRING_INDEX(invoice_no, '/', -1) AS UNSIGNED)), 0) AS max_no")
+            ->value('max_no');
 
-        if ($lastOrder && $lastOrder->invoice_no) {
-            // Extract the trailing number from e.g. "Nimi-2026/013"
-            preg_match('/\/(\d+)$/', $lastOrder->invoice_no, $matches);
-            $lastNumber = isset($matches[1]) ? intval($matches[1]) : 0;
-            $newNumber = str_pad($lastNumber + 1, 4, '0', STR_PAD_LEFT);
-        } else {
-            $newNumber = '0001';
-        }
+        // Safety loop: skip forward if the candidate is somehow already taken.
+        do {
+            $maxNumber++;
+            $candidate = 'Nimi-' . $year . '/' . str_pad($maxNumber, 4, '0', STR_PAD_LEFT);
+        } while (self::where('invoice_no', $candidate)->exists());
 
-        return 'Nimi-' . $year . '/' . $newNumber;
+        return $candidate;
     }
 
     public function company()
